@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일\Tools">
+      <UniqueIdentifier>{12d5f6cc-8dbd-47b6-8909-5b173fa32058}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Tools">
+      <UniqueIdentifier>{30d1f5a5-63e8-401d-9245-94f6f322cbab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Tools\JSON">
+      <UniqueIdentifier>{76610b26-e266-4680-93d0-c97097cf4bc3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Tools\JSON">
+      <UniqueIdentifier>{df59b130-ba82-44db-accb-f798bf06e922}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Tools\Database">
+      <UniqueIdentifier>{0b4abf13-c2ee-49ae-8da8-4b702a0c09d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Tools\Database">
+      <UniqueIdentifier>{e368a4a7-70d1-40a7-84a6-b2d4a60938f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Connector">
+      <UniqueIdentifier>{939c69b2-c3df-479a-a6c8-34bfc4be8027}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Connector">
+      <UniqueIdentifier>{ff03278d-b995-435f-b9eb-d3c22e5843db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Window">
+      <UniqueIdentifier>{ba4e1353-5022-413b-8149-3e9c81b6fbbe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Window">
+      <UniqueIdentifier>{a790fc73-7358-4d6f-ab13-090fad9be265}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="리소스 파일\UI">
+      <UniqueIdentifier>{8c69e4b4-50ef-42e5-b82a-e6f5a591fbda}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="JSON\Jsonify.cpp">
+      <Filter>소스 파일\Tools\JSON</Filter>
+    </ClCompile>
+    <ClCompile Include="Connector.cpp">
+      <Filter>소스 파일\Connector</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolFramework.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Database\DatabaseUser.cpp">
+      <Filter>소스 파일\Tools\Database</Filter>
+    </ClCompile>
+    <ClCompile Include="Window\DatabaseWindow.cpp">
+      <Filter>소스 파일\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Window\WindowEX.cpp">
+      <Filter>소스 파일\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\UI.cpp">
+      <Filter>소스 파일\Window</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="JSON\json.hpp">
+      <Filter>헤더 파일\Tools\JSON</Filter>
+    </ClInclude>
+    <ClInclude Include="JSON\Jsonify.h">
+      <Filter>헤더 파일\Tools\JSON</Filter>
+    </ClInclude>
+    <ClInclude Include="DatabaseUser.h">
+      <Filter>헤더 파일\Tools\Database</Filter>
+    </ClInclude>
+    <ClInclude Include="Connector.h">
+      <Filter>헤더 파일\Connector</Filter>
+    </ClInclude>
+    <ClInclude Include="ToolFramework.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Window\DatabaseWindow.h">
+      <Filter>헤더 파일\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Window\resource.h">
+      <Filter>헤더 파일\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Window\WindowEX.h">
+      <Filter>헤더 파일\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\UI.h">
+      <Filter>헤더 파일\Window</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Window\WindowBox.rc">
+      <Filter>리소스 파일</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
