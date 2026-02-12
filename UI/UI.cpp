@@ -60,3 +60,13 @@ void UImanager::DeleteAll()
     uiList.clear();  // unique_ptr 전부 파괴 → 자동 delete
     nextID = 0;
 }
+
+bool UImanager::Initialize()
+{
+    bool result = true;
+    std::wstring localDict = L"..\Resources";
+    result = result && AddUI(L"", Transform2DINT{ {0, 0}, {1.0f, 1.0f}, 0.0f }, RectINT{ 0, 0, 0, 0 });
+
+
+    return result;
+}

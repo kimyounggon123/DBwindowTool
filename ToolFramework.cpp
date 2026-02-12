@@ -21,10 +21,9 @@ bool ToolFramework::Initialize(const wchar_t* title, WNDPROC wndproc, const Vect
 
 bool ToolFramework::UpdateUI()
 {
-	uiManager.AddUI(L"", Transform2DINT{ {0, 0}, {1.0f, 1.0f}, 0.0f }, RectINT{ 0, 0, 0, 0 });
-
 	return true;
 }
+
 void ToolFramework::Run()
 {
 	window->show(cmdShow);

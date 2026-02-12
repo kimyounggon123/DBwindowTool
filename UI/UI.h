@@ -15,7 +15,6 @@ class UIElement
 	Transform2DINT transform;
 	RectINT space;
 
-
 	std::vector<UIElement*> children;
 public:
 	UIElement(const std::wstring& imagePath, const Position& pos, const RectINT& space) :
@@ -82,6 +81,8 @@ public:
 
 	bool RemoveUI(int ID);
 	bool RemoveUI(UIElement* elementPTR);
+
+	bool Initialize();
 
 	UIElement* GetUI(int ID)
 	{
