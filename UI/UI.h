@@ -12,21 +12,23 @@ class UIElement
 	bool activated;
 
 	std::wstring imagePath;
+
+protected:
+
 	Transform2DINT transform;
-	RectINT space;
 
 	std::vector<UIElement*> children;
 public:
-	UIElement(const std::wstring& imagePath, const Position& pos, const RectINT& space) :
+	UIElement(const std::wstring& imagePath, const Position& pos) :
 		ID(0),
 		activated(true),
-		transform(pos), space(space),
+		transform(pos, {10, 10}),
 		imagePath(imagePath)
 	{}
-	UIElement(const std::wstring& imagePath, const Transform2DINT& transform, const RectINT& space) :
+	UIElement(const std::wstring& imagePath, const Transform2DINT& transform) :
 		ID(0),
 		activated(true),
-		transform(transform), space(space),
+		transform(transform),
 		imagePath(imagePath)
 	{}
 	virtual ~UIElement() {}
@@ -38,7 +40,7 @@ public:
 	const Transform2DINT& GetTransform() const { return transform; }
 	void SetPosition(const Position& pos) { transform.pos = pos; }
 	void SetAngle(float angle) { transform.angle = angle; }
-	void SetScale(const Vector2& scale) { transform.scale = scale; }
+	void SetScale(const Vector2Int& scale) { transform.scale = scale; }
 
 	const std::wstring& GetImage() const { return imagePath; }
 
@@ -74,8 +76,8 @@ public:
 		DeleteAll();
 	}
 
-	bool AddUI(const std::wstring& imagePath, const Position& pos, const RectINT& space);
-	bool AddUI(const std::wstring& imagePath, const Transform2DINT& transform, const RectINT& space);
+	bool AddUI(const std::wstring& imagePath, const Position& pos);
+	bool AddUI(const std::wstring& imagePath, const Transform2DINT& transform);
 
 	bool AddUI(UIElementPTR element);
 

@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <string>
 #include "resource.h"
+#include "..\UI\UI.h"
 
 struct WindowInformations
 {
@@ -16,8 +17,6 @@ struct WindowInformations
 	int resolutionX;
 	int resolutionY;
 
-
-
 	WindowInformations(): hwnd(nullptr), wc{},
 		posX(0), posY(0),
 		resolutionX(0), resolutionY(0)
@@ -26,15 +25,49 @@ struct WindowInformations
 
 };
 
+
+class WindowUI : public UIElement
+{
+	HWND winUI;
+
+public:
+	WindowUI(const std::wstring& imagePath, const Position& pos) :
+		UIElement(imagePath, pos), winUI(NULL)
+	{}
+	WindowUI(const std::wstring& imagePath, const Transform2DINT& transform) :
+		UIElement(imagePath, transform), winUI(NULL)
+	{}
+
+	bool Create(LPCWSTR lpClassName, LPCWSTR lpWinName, DWORD dwStyle, HWND parentsWindow, HMENU id, HINSTANCE hInstance)
+	{
+		winUI = CreateWindowExW(
+			0,
+			lpClassName, // 2번째 
+			lpWinName,
+			dwStyle,
+			transform.pos.x, transform.pos.y,
+			transform.scale.x, transform.scale.y,
+			parentsWindow,
+			id,                 // 버튼 ID
+			hInstance,
+			nullptr
+		);
+		return winUI != NULL;
+	}
+};
+
 class WindowEX
 {
+protected:
 	static HINSTANCE hInstance; // program instance handle
 	static char szText[256];
 
 	WindowInformations winInfo;
 
+	UImanager& uiManager;
 public:
-	WindowEX(WindowInformations windowInfo) :winInfo(windowInfo)
+	WindowEX(WindowInformations windowInfo) :
+		winInfo(windowInfo), uiManager(UImanager::GetInstance())
 	{}
 	~WindowEX() {}
 
@@ -42,7 +75,7 @@ public:
 	// 대화상자 출력 함수. dialogShapeCode은 실제 rc에 저장된 대화상자 모양 코드번호이고
 	// dialogProc은 대화상자를 출력시켜주는 함수 포인터이다.
 	static void InitializeParam(HINSTANCE hInstance);
-	bool InitializeWindow(const wchar_t* title, WNDPROC wndProc);
+	virtual bool InitializeWindow(const wchar_t* title, WNDPROC wndProc);
 	void show(int cmdSize);
 
 

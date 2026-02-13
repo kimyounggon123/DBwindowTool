@@ -60,11 +60,10 @@ template<typename T>
 struct _Transform2D
 {
 	T pos;
-	Vector2 scale;
+	T scale;
 	float angle;
 
-
-	_Transform2D(const T& pos, const Vector2& scale = { 1.0f, 1.0f }, float angle = 0.0f) :
+	_Transform2D(const T& pos, const T& scale, float angle = 0.0f) :
 		pos(pos), scale(scale), angle(angle)
 	{}
 	_Transform2D(const _Transform2D<T>& other) : pos(other.pos), scale(other.scale), angle(other.angle)
@@ -100,6 +99,9 @@ struct _Rect
 			|| IsIn({ rect.x2, rect.y1 })
 			|| IsIn({ rect.x2, rect.y2 });
 	}
+
+	T LengthX() const { return std::abs(x2 - x1); }
+	T LengthY() const { return std::abs(y2 - y1); }
 
 };
 using RectINT = _Rect<int>;

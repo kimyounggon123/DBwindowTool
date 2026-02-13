@@ -1,14 +1,14 @@
 #include "UI.h"
 UImanager* UImanager::instance = nullptr;
 
-bool UImanager::AddUI(const std::wstring& imagePath, const Position& pos, const RectINT& space)
+bool UImanager::AddUI(const std::wstring& imagePath, const Position& pos)
 {
-    UIElementPTR ui = std::make_unique<UIElement>(imagePath, pos, space);
+    UIElementPTR ui = std::make_unique<UIElement>(imagePath, pos);
     return AddUI(std::move(ui));
 }
-bool UImanager::AddUI(const std::wstring& imagePath, const Transform2DINT& transform, const RectINT& space)
+bool UImanager::AddUI(const std::wstring& imagePath, const Transform2DINT& transform)
 {
-    UIElementPTR ui = std::make_unique<UIElement>(imagePath, transform, space);
+    UIElementPTR ui = std::make_unique<UIElement>(imagePath, transform);
     return AddUI(std::move(ui));
 }
 
@@ -65,7 +65,7 @@ bool UImanager::Initialize()
 {
     bool result = true;
     std::wstring localDict = L"..\Resources";
-    result = result && AddUI(L"", Transform2DINT{ {0, 0}, {1.0f, 1.0f}, 0.0f }, RectINT{ 0, 0, 0, 0 });
+    result = result && AddUI(L"", Transform2DINT{ {0, 0}, {10, 10}, 0.0f });
 
 
     return result;

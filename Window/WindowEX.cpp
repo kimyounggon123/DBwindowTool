@@ -13,7 +13,7 @@ bool WindowEX::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
     wc.cbSize = sizeof(wc);
     wc.lpfnWndProc = wndProc;
     wc.hInstance = hInstance;
-    wc.lpszClassName = L"DatabaseClass";
+    wc.lpszClassName = L"MyWindowClass";
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 
@@ -31,6 +31,8 @@ bool WindowEX::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
         hInstance,
         nullptr                 // lpParam (WM_NCCREATE/WM_CREATE로 전달됨)
     );
+
+    uiManager.Initialize();
 
     return hwnd != NULL;
 }
@@ -76,6 +78,7 @@ LRESULT CALLBACK WindowEX::MainProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         BS_GROUPBOX : 그룹 박스(테두리 박스)
     
     */
+
     switch (msg)
     {
     case WM_CREATE:

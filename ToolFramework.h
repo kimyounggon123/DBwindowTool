@@ -3,11 +3,11 @@
 
 #include "stdafx.h"
 #include "WindowEX.h"
+#include "DatabaseWindow.h"
 #include "UI/UI.h"
 
 class ToolFramework
 {
-
 	int cmdShow;
 	UImanager& uiManager;
 	WindowEX* window;
@@ -33,8 +33,6 @@ public:
 
 
 	bool Initialize(const wchar_t* title, WNDPROC wndproc, const Vector2Int& pos, const Vector2Int& resolution,  HINSTANCE hInstance, int cmdShow);
-	bool UpdateUI();
-
 	void Run();
 	void Close();
 };

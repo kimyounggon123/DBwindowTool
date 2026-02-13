@@ -1,4 +1,4 @@
-#include "WindowEX.h"
+#include "DataBaseWindow.h"
 #include "ToolFramework.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -7,8 +7,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	ToolFramework& frame = ToolFramework::GetInstance();
 
 	frame.Initialize(
-		L"hello",
-		WindowEX::MainProc,
+		L"DB tool",
+		DatabaseWindow::DBMain,
 		{0, 0},
 		{1280, 840},
 		hInstance,
