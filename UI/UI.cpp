@@ -64,7 +64,7 @@ void UImanager::DeleteAll()
 bool UImanager::Initialize()
 {
     bool result = true;
-    std::wstring localDict = L"..\Resources";
+    std::wstring localDict = L"..\\Resources";
     result = result && AddUI(L"", Transform2DINT{ {0, 0}, {10, 10}, 0.0f });
 
 

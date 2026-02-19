@@ -10,7 +10,7 @@ class ToolFramework
 {
 	int cmdShow;
 	UImanager& uiManager;
-	WindowEX* window;
+	DatabaseWindow* window;
 
 	static ToolFramework* instance;
 	ToolFramework() :

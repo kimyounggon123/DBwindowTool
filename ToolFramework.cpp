@@ -16,7 +16,6 @@ bool ToolFramework::Initialize(const wchar_t* title, WNDPROC wndproc, const Vect
 	this->cmdShow = cmdShow;
 	window->InitializeWindow(title, wndproc);
 
-
 	uiManager.Initialize();
 
 	return true;
@@ -30,4 +29,5 @@ void ToolFramework::Run()
 void ToolFramework::Close()
 {
 	uiManager.DeleteAll();
+	window->Shutdown();
 }

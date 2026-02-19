@@ -1,6 +1,10 @@
 #include "WindowEX.h"
 
 HINSTANCE WindowEX::hInstance = NULL;
+HFONT WindowEX::hFontNormal = NULL;
+HFONT WindowEX::hFontBold = NULL;
+
+
 char WindowEX::szText[256] = { 0 };
 
 void WindowEX::InitializeParam(HINSTANCE hInstance) { WindowEX::hInstance = hInstance; }
@@ -19,6 +23,32 @@ bool WindowEX::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 
     RegisterClassExW(&wc);
 
+    hFontNormal = CreateFontW(
+        18,                 // 높이
+        0, 0, 0,
+        FW_NORMAL,          // 폰트
+        FALSE, FALSE, FALSE, // 이탤릭, 언더바, 크로스바
+        DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS,
+        CLIP_DEFAULT_PRECIS,
+        DEFAULT_QUALITY,
+        DEFAULT_PITCH | FF_DONTCARE,
+        L"맑은 고딕"
+    );
+
+    hFontBold = CreateFontW(
+        18,                 // 높이
+        0, 0, 0,
+        FW_BOLD,          // 폰트
+        FALSE, FALSE, FALSE, // 이탤릭, 언더바, 크로스바
+        DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS,
+        CLIP_DEFAULT_PRECIS,
+        DEFAULT_QUALITY,
+        DEFAULT_PITCH | FF_DONTCARE,
+        L"맑은 고딕"
+    );
+
     hwnd = CreateWindowExW(
         0,                      // ex style
         wc.lpszClassName,             // class name
@@ -29,10 +59,12 @@ bool WindowEX::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
         nullptr,                // parent (버튼 등의 ui는 부모를 base window로 설정. base window는 nullptr로)
         nullptr,                // menu (버튼 스타일 정의. base window는 nullptr로)
         hInstance,
-        nullptr                 // lpParam (WM_NCCREATE/WM_CREATE로 전달됨)
+        this                 // lpParam (WM_NCCREATE/WM_CREATE로 전달됨)
     );
 
     uiManager.Initialize();
+
+
 
     return hwnd != NULL;
 }
@@ -126,4 +158,8 @@ void WindowEX::show(int cmdSize)
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+}
+void WindowEX::Shutdown()
+{
+
 }
