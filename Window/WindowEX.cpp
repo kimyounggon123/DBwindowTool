@@ -64,8 +64,6 @@ bool WindowEX::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 
     uiManager.Initialize();
 
-
-
     return hwnd != NULL;
 }
 LRESULT CALLBACK WindowEX::MainProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -151,12 +149,21 @@ void WindowEX::show(int cmdSize)
     // 창을 화면에 보여 줌
     ShowWindow(winInfo.hwnd, cmdSize); // nCmdShow : 첫 창의 크기를 설정. os에서 받아 오기
     UpdateWindow(winInfo.hwnd);         // 즉시 WM_PAINT(그리기)를 유도하는 함수. ShowWindow만 해도 되나 그리기르르 촉진시킴.
-  
-    MSG msg{};
+ 
+    //while (GetMessage(&msg, nullptr, 0, 0))
+    //{
+    //    TranslateMessage(&msg);
+    //    DispatchMessage(&msg);
+    //}
+
+    MSG msg;
     while (GetMessage(&msg, nullptr, 0, 0))
     {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        if (!IsDialogMessage(winInfo.hwnd, &msg))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
     }
 }
 void WindowEX::Shutdown()

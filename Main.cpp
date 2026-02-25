@@ -10,7 +10,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		L"DB tool",
 		DatabaseWindow::DBMain,
 		{0, 0},
-		{840, 600},
+		{1440, 800},
 		hInstance,
 		nCmdShow);
 

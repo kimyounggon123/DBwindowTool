@@ -24,7 +24,9 @@ bool ToolFramework::Initialize(const wchar_t* title, WNDPROC wndproc, const Vect
 
 void ToolFramework::Run()
 {
+	
 	window->show(cmdShow);
+	WindowInformations info = window->GetWinInfo();
 }
 void ToolFramework::Close()
 {

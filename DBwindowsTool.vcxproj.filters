@@ -60,9 +60,6 @@
     <ClCompile Include="ToolFramework.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Database\DatabaseUser.cpp">
-      <Filter>소스 파일\Tools\Database</Filter>
-    </ClCompile>
     <ClCompile Include="Window\DatabaseWindow.cpp">
       <Filter>소스 파일\Window</Filter>
     </ClCompile>
@@ -72,8 +69,14 @@
     <ClCompile Include="Transform.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="Database\DatabaseAccount.cpp">
+      <Filter>소스 파일\Tools\Database</Filter>
+    </ClCompile>
     <ClCompile Include="UI\UI.cpp">
       <Filter>소스 파일\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Database\DBStrings.cpp">
+      <Filter>소스 파일\Tools\Database</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -82,9 +85,6 @@
     </ClInclude>
     <ClInclude Include="JSON\Jsonify.h">
       <Filter>헤더 파일\Tools\JSON</Filter>
-    </ClInclude>
-    <ClInclude Include="DatabaseUser.h">
-      <Filter>헤더 파일\Tools\Database</Filter>
     </ClInclude>
     <ClInclude Include="Connector.h">
       <Filter>헤더 파일\Connector</Filter>
@@ -107,8 +107,14 @@
     <ClInclude Include="Transform.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
+    <ClInclude Include="Database\DatabaseAccount.h">
+      <Filter>헤더 파일\Tools\Database</Filter>
+    </ClInclude>
     <ClInclude Include="UI\UI.h">
       <Filter>헤더 파일\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Database\DBStrings.h">
+      <Filter>헤더 파일\Tools\Database</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
