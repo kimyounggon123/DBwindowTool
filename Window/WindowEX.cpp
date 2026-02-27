@@ -7,6 +7,36 @@ HFONT WindowEX::hFontBold = NULL;
 
 char WindowEX::szText[256] = { 0 };
 
+std::wstring WindowEX::GetTimeString()
+{
+    auto now = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+
+    std::tm tm{};
+    localtime_s(&tm, &t);   // Windows 안전 버전
+
+    std::wstringstream ss;
+    ss << L"["
+        << std::setw(2) << std::setfill(L'0') << tm.tm_hour << L":"
+        << std::setw(2) << std::setfill(L'0') << tm.tm_min << L":"
+        << std::setw(2) << std::setfill(L'0') << tm.tm_sec
+        << L"]";
+
+    return ss.str();
+}
+std::wstring WindowEX::GetTimeStringWin32()
+{
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+
+    wchar_t buffer[16];
+    swprintf_s(buffer, L"[%02d:%02d:%02d]",
+        st.wHour, st.wMinute, st.wSecond);
+
+    return buffer;
+}
+
+
 void WindowEX::InitializeParam(HINSTANCE hInstance) { WindowEX::hInstance = hInstance; }
 bool WindowEX::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 {
@@ -143,6 +173,8 @@ LRESULT CALLBACK WindowEX::MainProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     }
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
+
+
 
 void WindowEX::show(int cmdSize)
 {

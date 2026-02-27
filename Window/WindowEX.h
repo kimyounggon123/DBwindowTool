@@ -6,6 +6,11 @@
 #include "resource.h"
 #include "..\UI\UI.h"
 
+#include <iostream>
+#include <sstream>   // wstringstream
+#include <iomanip>
+#include <chrono>
+#include <ctime>
 struct WindowInformations
 {
 	HWND hwnd;
@@ -38,6 +43,8 @@ protected:
 
 	UImanager& uiManager;
 
+	static std::wstring GetTimeString();
+	static std::wstring GetTimeStringWin32();
 public:
 	WindowEX(WindowInformations windowInfo) :
 		winInfo(windowInfo), uiManager(UImanager::GetInstance())

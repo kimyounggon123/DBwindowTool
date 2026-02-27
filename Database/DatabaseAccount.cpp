@@ -1,7 +1,7 @@
 #include "DatabaseAccount.h"
 #include <algorithm>
 
-DatabaseAccount::DatabaseAccount(): conn(nullptr), res(nullptr), row(nullptr)
+DatabaseAccount::DatabaseAccount(): conn(nullptr), res(nullptr), row(nullptr), isTransaction(false)
 {}
 
 DatabaseAccount::~DatabaseAccount() 
@@ -35,10 +35,16 @@ bool DatabaseAccount::ReConnect()
 	if (!DBinfo.IsLogIn()) return false;
 	return Connect(DBinfo.GetServer(), DBinfo.GetID(), DBinfo.GetPW(), DBinfo.GetDatabase());
 }
+
 void DatabaseAccount::Close()
 {
+	DBinfo.Close();
 	freeResult();
-	if (conn) mysql_close(conn);
+	if (conn)
+	{
+		mysql_close(conn);
+		conn = nullptr;
+	}
 }
 
 std::string DatabaseAccount::WStringToUTF8(const std::wstring& wstr) {
@@ -85,8 +91,10 @@ std::string DatabaseAccount::ExtractDatabaseName(const std::string& query)
 }
 
 
-bool DatabaseAccount::executeQuery(const std::string& query)
+bool DatabaseAccount::ExecuteQuery(const std::string& query)
 {
+	if (conn == nullptr) return false;
+
 	freeResult(); // 이전 결과 정리
 	if (mysql_query(conn, query.c_str()) != 0) return false;
 	res = mysql_store_result(conn);
@@ -96,6 +104,27 @@ bool DatabaseAccount::executeQuery(const std::string& query)
 		DBinfo.SetDatabaseName(ExtractDatabaseName(query));
 	}
 	return isOK; // 결과가 나오는 쿼리문은 true
+}
+
+
+bool DatabaseAccount::StartTransaction()
+{
+	if (isTransaction == true) return false;
+	if (!ExecuteQuery("START TRANSACTION;")) return false;
+	isTransaction = true;
+	return true;
+}
+bool DatabaseAccount::Commit()
+{
+	if (!ExecuteQuery("COMMIT;")) return false;
+	if (isTransaction) isTransaction = false;
+	return true;
+}
+bool DatabaseAccount::Rollback()
+{
+	if (!ExecuteQuery("ROLLBACK;")) return false;
+	if (isTransaction) isTransaction = false;
+	return true;
 }
 
 std::string DatabaseAccount::GetLastError()

@@ -23,6 +23,7 @@ class DatabaseWindow : public WindowEX
 
 	static void WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static void LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static void LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static void SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	static void SanitizeForListView(std::wstring& str);

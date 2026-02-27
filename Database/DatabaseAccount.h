@@ -82,6 +82,7 @@ class DatabaseAccount
 	MYSQL_RES* res;
 	MYSQL_ROW row;
 
+	bool isTransaction;
 
 	bool IsUseQuery(const std::string query);
 	std::string ExtractDatabaseName(const std::string& query);
@@ -94,7 +95,7 @@ public:
 	bool ReConnect();
 	void Close();
 
-	bool executeQuery(const std::string& query); // 실제 쿼리문 실행
+	bool ExecuteQuery(const std::string& query); // 실제 쿼리문 실행
 	std::string GetLastError();
 	std::wstring GetLastErrorW();
 
@@ -105,10 +106,19 @@ public:
 	MYSQL_FIELD* getFieldName();
 	unsigned int getFieldNum();
 
+
+	bool StartTransaction();
+	bool Commit();
+	bool Rollback();
+
+
+
 	std::string WStringToUTF8(const std::wstring& wstr);
 	std::wstring UTF8ToWString(const std::string& utf8Str);
 
 	std::wstring GetDatabaseName() { return UTF8ToWString(DBinfo.GetDatabase()); }
+
+	bool IsConnected() const { return conn != nullptr; }
 };
 
 

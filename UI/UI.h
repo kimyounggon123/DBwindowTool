@@ -14,7 +14,6 @@ class UIElement
 	std::wstring imagePath;
 
 protected:
-
 	Transform2DINT transform;
 
 	std::vector<UIElement*> children;
@@ -49,6 +48,54 @@ public:
 
 	//bool AddChild(UIElement* child);
 	//bool RemoveChild(int ID);
+};
+
+
+using UIElementPTR = std::unique_ptr<UIElement>;
+class UImanager
+{
+	std::atomic_int nextID;
+	std::vector<UIElementPTR> uiList;
+	std::unordered_map<int, UIElement*> uiMap;
+
+	static UImanager* instance;
+	UImanager() : nextID(0)
+	{
+	}
+
+public:
+	static UImanager& GetInstance()
+	{
+		if (instance == nullptr) instance = new UImanager();
+		return *instance;
+	}
+	~UImanager()
+	{
+		DeleteAll();
+	}
+
+	bool AddUI(const std::wstring& imagePath, const Position& pos);
+	bool AddUI(const std::wstring& imagePath, const Transform2DINT& transform);
+
+	bool AddUI(UIElementPTR element);
+
+	bool RemoveUI(int ID);
+	bool RemoveUI(UIElement* elementPTR);
+
+	bool Initialize();
+
+	UIElement* GetUI(int ID)
+	{
+		auto it = uiMap.find(ID);
+		if (it == uiMap.end())  return nullptr;
+		return it->second;
+	}
+
+	std::vector<UIElementPTR>::const_iterator GetBegin() const { return uiList.begin(); }
+	std::vector<UIElementPTR>::const_iterator GetEnd() const { return uiList.end(); }
+
+	void DeleteAll();
+
 };
 
 #include <Windows.h>
@@ -127,7 +174,6 @@ public:
 
 #include <commctrl.h> // ListView »ç¿ë
 #pragma comment(lib, "Comctl32.lib")
-
 class TableUI : public WindowUI
 {
 	int rowSize;
@@ -136,18 +182,14 @@ class TableUI : public WindowUI
 public:
 	TableUI(const std::wstring& imagePath, const Position& pos) :
 		WindowUI(imagePath, pos), rowSize(0), columnSize(0)
-	{
-	}
+	{}
 	TableUI(const std::wstring& imagePath, const Transform2DINT& transform) :
 		WindowUI(imagePath, transform), rowSize(0), columnSize(0)
-	{
-	}
+	{}
 	~TableUI() = default;
 
 	bool Create(DWORD ExStyle, LPCWSTR lpClassName, LPCWSTR lpWinName, DWORD dwStyle, HWND parentsWindow, HMENU id, HINSTANCE hInstance) override
 	{
-
-
 		bool result = WindowUI::Create(ExStyle, lpClassName, lpWinName, dwStyle, parentsWindow, id, hInstance);
 
 		result = result && SendMessageW(winUI,
@@ -171,53 +213,23 @@ public:
 };
 
 
-
-using UIElementPTR = std::unique_ptr<UIElement>;
-class UImanager
+class AccodianUI : public WindowUI
 {
-	std::atomic_int nextID;
-	std::vector<UIElementPTR> uiList;
-	std::unordered_map<int, UIElement*> uiMap;
-
-	static UImanager* instance;
-	UImanager() : nextID(0)
-	{
-	}
 
 public:
-	static UImanager& GetInstance()
-	{
-		if (instance == nullptr) instance = new UImanager();
-		return *instance;
-	}
-	~UImanager()
-	{
-		DeleteAll();
-	}
+	AccodianUI(const std::wstring& imagePath, const Position& pos) :
+		WindowUI(imagePath, pos)
+	{}
+	AccodianUI(const std::wstring& imagePath, const Transform2DINT& transform) :
+		WindowUI(imagePath, transform)
+	{}
 
-	bool AddUI(const std::wstring& imagePath, const Position& pos);
-	bool AddUI(const std::wstring& imagePath, const Transform2DINT& transform);
-
-	bool AddUI(UIElementPTR element);
-
-	bool RemoveUI(int ID);
-	bool RemoveUI(UIElement* elementPTR);
-
-	bool Initialize();
-
-	UIElement* GetUI(int ID)
-	{
-		auto it = uiMap.find(ID);
-		if (it == uiMap.end())  return nullptr;
-		return it->second;
-	}
-
-	std::vector<UIElementPTR>::const_iterator GetBegin() const { return uiList.begin(); }
-	std::vector<UIElementPTR>::const_iterator GetEnd() const { return uiList.end(); }
-
-	void DeleteAll();
+	
 
 };
+
+
+
 
 
 #endif

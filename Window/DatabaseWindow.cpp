@@ -6,7 +6,9 @@ DBQueryExamples DatabaseWindow::queryExample;
 // 여러 ui들
 WindowUI* id = nullptr;
 WindowUI* pw = nullptr;
+
 WindowUI* logInBtn = nullptr;
+WindowUI* logOutBtn = nullptr;
 
 WindowUI* currIDTag = nullptr;
 WindowUI* currDatabaseTag = nullptr;
@@ -17,11 +19,11 @@ WindowUI* editUI = nullptr;
 WindowUI* resultLog = nullptr;
 WindowUI* submitButton = nullptr;
 
+TableUI* listView = nullptr;
+
 
 WindowUI* selectQueryBtn = nullptr;
-
-
-TableUI* listView = nullptr;
+WindowUI* createDBQueryBtn = nullptr;
 
 
 bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
@@ -68,19 +70,24 @@ void DatabaseWindow::InitializeUI()
 
     // 로그인 영역
     std::unique_ptr<WindowUI> idInputptr = std::make_unique<WindowUI>
-        (L"", Transform2DINT({ Position{1040, 10}, Vector2Int{300, 20} , 0.0f }));
+        (L"", Transform2DINT({ Position{960, 10}, Vector2Int{300, 20} , 0.0f }));
     id = idInputptr.get();
     uiManager.AddUI(std::move(idInputptr));
 
     std::unique_ptr<WindowUI> pwInputptr = std::make_unique<WindowUI>
-        (L"", Transform2DINT({ Position{1040, 32}, Vector2Int{300, 20} , 0.0f }));
+        (L"", Transform2DINT({ Position{960, 32}, Vector2Int{300, 20} , 0.0f }));
     pw = pwInputptr.get();
     uiManager.AddUI(std::move(pwInputptr));
 
     std::unique_ptr<WindowUI> logInBtnptr = std::make_unique<WindowUI>
-        (L"", Transform2DINT({ Position{1350, 10}, Vector2Int{60, 44} , 0.0f }));
+        (L"", Transform2DINT({ Position{1270, 10}, Vector2Int{60, 44} , 0.0f }));
     logInBtn = logInBtnptr.get();
     uiManager.AddUI(std::move(logInBtnptr));
+
+    std::unique_ptr<WindowUI> logOutBtnptr = std::make_unique<WindowUI>
+        (L"", Transform2DINT({ Position{1340, 10}, Vector2Int{60, 44} , 0.0f }));
+    logOutBtn = logOutBtnptr.get();
+    uiManager.AddUI(std::move(logOutBtnptr));
 
 
     // 입력창
@@ -105,7 +112,6 @@ void DatabaseWindow::InitializeUI()
         (L"", Transform2DINT({ Position{10, 10}, Vector2Int{620, 740} , 0.0f }));
     listView = listViewUI.get();
     uiManager.AddUI(std::move(listViewUI));
-
 
 }
 
@@ -142,6 +148,9 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
         case 1100:
             LogIn(hwnd, msg, wParam, lParam);
             break;
+        case 1101:
+            LogOut(hwnd, msg, wParam, lParam);
+            break;
         
         }
         break;
@@ -177,7 +186,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         WS_EX_CLIENTEDGE,
         L"EDIT",
         L"",
-        WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | WS_TABSTOP,
+        WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
         hwnd,
         nullptr,
         WindowEX::hInstance
@@ -188,7 +197,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         WS_EX_CLIENTEDGE,
         L"EDIT",
         L"",
-        WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_PASSWORD | WS_TABSTOP,
+        WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_PASSWORD,
         hwnd,
         nullptr,
         WindowEX::hInstance
@@ -198,14 +207,24 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     logInBtn->Create(
         0,
         L"BUTTON",
-        L"Log in",
-        WS_CHILD | WS_VISIBLE |  BS_PUSHBUTTON | WS_TABSTOP,
+        L"Log In",
+        WS_CHILD | WS_VISIBLE |  BS_PUSHBUTTON,
         hwnd,             // 부모
         (HMENU)1100,      // ID
         hInstance
     );
     logInBtn->SetFont(hFontBold);
 
+    logOutBtn->Create(
+        0,
+        L"BUTTON",
+        L"Log Out",
+        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        hwnd,             // 부모
+        (HMENU)1101,      // ID
+        hInstance
+    );
+    logOutBtn->SetFont(hFontBold);
 
     currIDTag->Create(
         0,
@@ -256,7 +275,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         WS_EX_CLIENTEDGE,
         L"EDIT",
         L"",
-        WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
+        WS_CHILD | WS_VISIBLE | ES_AUTOVSCROLL | WS_VSCROLL | WS_TABSTOP,
         hwnd,
         (HMENU)1001,
         WindowEX::hInstance
@@ -267,7 +286,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         0,
         L"BUTTON",
         L"Submit",
-        WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
+        WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | WS_TABSTOP,
         hwnd,             // 부모
         (HMENU)1003,      // ID
         hInstance
@@ -307,13 +326,28 @@ void DatabaseWindow::LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         currID->SendToHWND(WM_SETTEXT, 0, (LPARAM)idText.c_str());
         currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->UTF8ToWString("None").c_str());
+        ShowResultMsg(L"Log In success", false);
     }
-
+    else
+    {
+        ShowResultMsg(account->GetLastErrorW(), false);
+    }
     id->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
     pw->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
 }
 
-
+void DatabaseWindow::LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    if (!account->IsConnected())
+    {
+        ShowResultMsg(L"No connection", false);
+        return;
+    }
+    account->Close();
+    currID->SendToHWND(WM_SETTEXT, 0, (LPARAM)L"");
+    currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)L"None");
+    ShowResultMsg(L"Log Out", false);
+}
 
 
 
@@ -333,9 +367,9 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 {
     std::wstring query = editUI->GetTextWFromHWND();
     //SanitizeForListView(query); // 개행 문자 \n \r 삭제
-    if (!account->executeQuery(account->WStringToUTF8(query)))
+    if (!account->ExecuteQuery(account->WStringToUTF8(query)))
     {
-        ShowResultMsg(account->GetLastErrorW() + L"\r\n", false);
+        ShowResultMsg(account->GetLastErrorW(), false);
         return;
     }
 
@@ -366,15 +400,17 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     }
     
     ShowResultMsg(L"Used query : " + query, false);
-
     editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
-
     currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
 }
 
+
 void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError)
 {
+    std::wstring time = GetTimeString();
+    std::wstring final = time + L" " + str + L"\r\n";
+
     int length = GetWindowTextLengthW(resultLog->GetHWND());
-    resultLog->SendToHWND(EM_SETSEL, length, length); 
-    resultLog->SendToHWND(EM_REPLACESEL, FALSE, (LPARAM)str.c_str());
+    resultLog->SendToHWND(EM_SETSEL, length, length);
+    resultLog->SendToHWND(EM_REPLACESEL, FALSE, (LPARAM)final.c_str());
 }
