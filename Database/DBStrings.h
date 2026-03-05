@@ -30,6 +30,24 @@ struct DBQueryExamples
 	std::wstring showProcessList = L"SHOW PROCESSLIST;"; // 실행 중인 세션 목록을 보여 줌
 	std::wstring showTableStatus = L"SHOW TABLE STATUS;"; // Table들의 물리적 상태 정보(이름, 크기, 시간, auto increment 등등)
 	
-	std::wstring transaction = L"START TRANSACTION; UPDATE users SET gold = gold - 100 WHERE user_id = 1; SAVEPOINT sp1; UPDATE users SET gold = gold + 100 WHERE user_id = 2; ROLLBACK TO sp1; COMMIT;"
+	std::wstring transaction = L"START TRANSACTION; UPDATE users SET gold = gold - 100 WHERE user_id = 1; SAVEPOINT sp1; UPDATE users SET gold = gold + 100 WHERE user_id = 2; ROLLBACK TO sp1; COMMIT;";
+		
+	/*
+	(view 생성)
+			CREATE VIEW 뷰_이름 AS
+			SELECT 컬럼1, 컬럼2, ...
+			FROM 테이블명
+			WHERE 조건;
+
+		CREATE VIEW v_student_results AS
+		SELECT
+			s.name AS student_name,
+			s.class,
+			sc.subject,
+			sc.score
+		FROM students s
+		INNER JOIN scores sc ON s.id = sc.student_id
+		WHERE sc.score >= 60; -- 60점 이상만 보는 뷰
+	*/
 };
 #endif

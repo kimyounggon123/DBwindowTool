@@ -2,7 +2,6 @@
 #define _UI_H
 
 #include "..\stdafx.h"
-#include <unordered_map>
 #include "..\Transform.h"
 #include <string>
 
@@ -38,7 +37,6 @@ public:
 
 	const Transform2DINT& GetTransform() const { return transform; }
 	void SetPosition(const Position& pos) { transform.pos = pos; }
-	void SetAngle(float angle) { transform.angle = angle; }
 	void SetScale(const Vector2Int& scale) { transform.scale = scale; }
 
 	const std::wstring& GetImage() const { return imagePath; }
@@ -50,53 +48,6 @@ public:
 	//bool RemoveChild(int ID);
 };
 
-
-using UIElementPTR = std::unique_ptr<UIElement>;
-class UImanager
-{
-	std::atomic_int nextID;
-	std::vector<UIElementPTR> uiList;
-	std::unordered_map<int, UIElement*> uiMap;
-
-	static UImanager* instance;
-	UImanager() : nextID(0)
-	{
-	}
-
-public:
-	static UImanager& GetInstance()
-	{
-		if (instance == nullptr) instance = new UImanager();
-		return *instance;
-	}
-	~UImanager()
-	{
-		DeleteAll();
-	}
-
-	bool AddUI(const std::wstring& imagePath, const Position& pos);
-	bool AddUI(const std::wstring& imagePath, const Transform2DINT& transform);
-
-	bool AddUI(UIElementPTR element);
-
-	bool RemoveUI(int ID);
-	bool RemoveUI(UIElement* elementPTR);
-
-	bool Initialize();
-
-	UIElement* GetUI(int ID)
-	{
-		auto it = uiMap.find(ID);
-		if (it == uiMap.end())  return nullptr;
-		return it->second;
-	}
-
-	std::vector<UIElementPTR>::const_iterator GetBegin() const { return uiList.begin(); }
-	std::vector<UIElementPTR>::const_iterator GetEnd() const { return uiList.end(); }
-
-	void DeleteAll();
-
-};
 
 #include <Windows.h>
 class WindowUI : public UIElement
@@ -110,11 +61,12 @@ public:
 	}
 	WindowUI(const std::wstring& imagePath, const Transform2DINT& transform) :
 		UIElement(imagePath, transform), winUI(nullptr)
-	{
-	}
+	{}
 
 	virtual bool Create(DWORD ExStyle, LPCWSTR lpClassName, LPCWSTR lpWinName, DWORD dwStyle, HWND parentsWindow, HMENU id, HINSTANCE hInstance)
 	{
+		if (winUI != nullptr) return true;
+
 		winUI = CreateWindowExW(
 			ExStyle,
 			lpClassName, // 2번째 
@@ -127,6 +79,7 @@ public:
 			hInstance,
 			this
 		);
+
 		return winUI != NULL;
 	}
 
@@ -168,6 +121,12 @@ public:
 		GetWindowTextA(winUI, text.data(), length + 1);
 		return text;
 	}
+
+	bool OnMouse(const Position& mousePos)
+	{
+		return mousePos.x >= transform.pos.x && mousePos.x <= transform.pos.x + transform.scale.x
+			&& mousePos.y >= transform.pos.y && mousePos.y <= transform.pos.y + transform.scale.y;
+	}
 };
 
 
@@ -176,15 +135,18 @@ public:
 #pragma comment(lib, "Comctl32.lib")
 class TableUI : public WindowUI
 {
-	int rowSize;
-	int columnSize;
 
+
+	bool useVirtualTable;
+	// 헤더나 클래스 멤버로 선언
+	std::vector<std::wstring> columns; // 컬럼명 저장
+	std::vector<std::vector<std::wstring>> tableData; // 실제 데이터 저장
 public:
-	TableUI(const std::wstring& imagePath, const Position& pos) :
-		WindowUI(imagePath, pos), rowSize(0), columnSize(0)
+	TableUI(const std::wstring& imagePath, const Position& pos, bool useVirtualTable = true) :
+		WindowUI(imagePath, pos), useVirtualTable(useVirtualTable)
 	{}
-	TableUI(const std::wstring& imagePath, const Transform2DINT& transform) :
-		WindowUI(imagePath, transform), rowSize(0), columnSize(0)
+	TableUI(const std::wstring& imagePath, const Transform2DINT& transform, bool useVirtualTable = true) :
+		WindowUI(imagePath, transform), useVirtualTable(useVirtualTable)
 	{}
 	~TableUI() = default;
 
@@ -202,32 +164,22 @@ public:
 	void Resize(int width)
 	{
 		//double part = columnSize;
-		for (int i = 0; i < columnSize; i++)
+		for (int i = 0; i < columns.size(); i++)
 		{
 			ListView_SetColumnWidth(winUI, i, width * 0.1);
 		}
 	}
+
 	void SetColumns(const std::vector<std::wstring>& cols);
 	void AddRow(const std::vector<std::wstring>& data);
+	void SetItemCount();
 	void Clear();
+
+	size_t GetColumnSize() { return columns.size(); }
+	size_t GetRowSize() { return tableData.size(); }
+
+	LPWSTR GetRealItem(int r, int c) { return  (LPWSTR)tableData[r][c].c_str(); }
 };
-
-
-class AccodianUI : public WindowUI
-{
-
-public:
-	AccodianUI(const std::wstring& imagePath, const Position& pos) :
-		WindowUI(imagePath, pos)
-	{}
-	AccodianUI(const std::wstring& imagePath, const Transform2DINT& transform) :
-		WindowUI(imagePath, transform)
-	{}
-
-	
-
-};
-
 
 
 

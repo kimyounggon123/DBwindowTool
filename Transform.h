@@ -61,12 +61,12 @@ struct _Transform2D
 {
 	T pos;
 	T scale;
-	float angle;
+	// float angle;
 
-	_Transform2D(const T& pos, const T& scale, float angle = 0.0f) :
-		pos(pos), scale(scale), angle(angle)
+	_Transform2D(const T& pos, const T& scale) :
+		pos(pos), scale(scale)
 	{}
-	_Transform2D(const _Transform2D<T>& other) : pos(other.pos), scale(other.scale), angle(other.angle)
+	_Transform2D(const _Transform2D<T>& other) : pos(other.pos), scale(other.scale)
 	{}
 
 };

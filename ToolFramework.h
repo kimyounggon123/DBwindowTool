@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include "WindowEX.h"
 #include "DatabaseWindow.h"
-#include "UI/UI.h"
+#include "UI/UImanager.h"
 
 class ToolFramework
 {

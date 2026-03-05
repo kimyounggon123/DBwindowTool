@@ -11,15 +11,14 @@ DatabaseAccount::~DatabaseAccount()
 
 bool DatabaseAccount::Connect(const char* server, const char* user, const char* password, const char* database)
 {
-	if (!conn)
-	{
-		conn = mysql_init(nullptr);
-		if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)) 
-			return false;
-		mysql_set_character_set(conn, "utf8");
-		DBinfo.LogIn(server, user, password, database);
-		DBinfo.Connect();
-	}
+	if (conn) return false;
+
+	conn = mysql_init(nullptr);
+	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)) return false;
+	mysql_set_character_set(conn, "utf8");
+	DBinfo.LogIn(server, user, password, database);
+	DBinfo.Connect();
+	
 	return true;
 }
 
@@ -132,7 +131,6 @@ std::string DatabaseAccount::GetLastError()
 	if (conn == nullptr) return "No connection";
 	unsigned int errNo = mysql_errno(conn);
 	const char* errMsg = mysql_error(conn);
-
 	std::string error =	"Error " + std::to_string(errNo) + ": " + errMsg;
 	return error;
 }

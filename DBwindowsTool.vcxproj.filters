@@ -46,6 +46,12 @@
     <Filter Include="리소스 파일\UI">
       <UniqueIdentifier>{8c69e4b4-50ef-42e5-b82a-e6f5a591fbda}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Window\UI">
+      <UniqueIdentifier>{a44ead7c-595c-4a10-8bde-7f0452248f71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Window\UI">
+      <UniqueIdentifier>{9c805662-e5ca-424d-81a7-d4c86cb603d9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -72,11 +78,17 @@
     <ClCompile Include="Database\DatabaseAccount.cpp">
       <Filter>소스 파일\Tools\Database</Filter>
     </ClCompile>
-    <ClCompile Include="UI\UI.cpp">
-      <Filter>소스 파일\Window</Filter>
-    </ClCompile>
     <ClCompile Include="Database\DBStrings.cpp">
       <Filter>소스 파일\Tools\Database</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\UI.cpp">
+      <Filter>소스 파일\Window\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\Button.cpp">
+      <Filter>소스 파일\Window\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\UImanager.cpp">
+      <Filter>소스 파일\Window\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -110,11 +122,17 @@
     <ClInclude Include="Database\DatabaseAccount.h">
       <Filter>헤더 파일\Tools\Database</Filter>
     </ClInclude>
-    <ClInclude Include="UI\UI.h">
-      <Filter>헤더 파일\Window</Filter>
-    </ClInclude>
     <ClInclude Include="Database\DBStrings.h">
       <Filter>헤더 파일\Tools\Database</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\UI.h">
+      <Filter>헤더 파일\Window\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\Button.h">
+      <Filter>헤더 파일\Window\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\UImanager.h">
+      <Filter>헤더 파일\Window\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

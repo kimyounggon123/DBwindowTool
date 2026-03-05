@@ -4,7 +4,10 @@
 #include <Windows.h>
 #include <string>
 #include "resource.h"
+
 #include "..\UI\UI.h"
+#include "..\UI\UImanager.h"
+#include "..\UI\Button.h"
 
 #include <iostream>
 #include <sstream>   // wstringstream

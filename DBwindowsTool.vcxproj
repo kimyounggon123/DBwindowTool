@@ -136,7 +136,9 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ToolFramework.cpp" />
     <ClCompile Include="Transform.cpp" />
+    <ClCompile Include="UI\Button.cpp" />
     <ClCompile Include="UI\UI.cpp" />
+    <ClCompile Include="UI\UImanager.cpp" />
     <ClCompile Include="Window\DatabaseWindow.cpp" />
     <ClCompile Include="Window\WindowEX.cpp" />
   </ItemGroup>
@@ -149,7 +151,9 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="ToolFramework.h" />
     <ClInclude Include="Transform.h" />
+    <ClInclude Include="UI\Button.h" />
     <ClInclude Include="UI\UI.h" />
+    <ClInclude Include="UI\UImanager.h" />
     <ClInclude Include="Window\DatabaseWindow.h" />
     <ClInclude Include="Window\resource.h" />
     <ClInclude Include="Window\WindowEX.h" />
