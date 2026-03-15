@@ -52,6 +52,12 @@
     <Filter Include="소스 파일\Window\UI">
       <UniqueIdentifier>{9c805662-e5ca-424d-81a7-d4c86cb603d9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Tools\Utils">
+      <UniqueIdentifier>{54b85c9e-cc33-49c3-8cb3-e50c2791e78a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Tools\Utils">
+      <UniqueIdentifier>{fc640256-209d-4362-8ae0-39910e99fe64}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -72,9 +78,6 @@
     <ClCompile Include="Window\WindowEX.cpp">
       <Filter>소스 파일\Window</Filter>
     </ClCompile>
-    <ClCompile Include="Transform.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="Database\DatabaseAccount.cpp">
       <Filter>소스 파일\Tools\Database</Filter>
     </ClCompile>
@@ -89,6 +92,12 @@
     </ClCompile>
     <ClCompile Include="UI\UImanager.cpp">
       <Filter>소스 파일\Window\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Transform.cpp">
+      <Filter>소스 파일\Tools\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Timer.cpp">
+      <Filter>소스 파일\Tools\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -116,9 +125,6 @@
     <ClInclude Include="Window\WindowEX.h">
       <Filter>헤더 파일\Window</Filter>
     </ClInclude>
-    <ClInclude Include="Transform.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="Database\DatabaseAccount.h">
       <Filter>헤더 파일\Tools\Database</Filter>
     </ClInclude>
@@ -134,10 +140,11 @@
     <ClInclude Include="UI\UImanager.h">
       <Filter>헤더 파일\Window\UI</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Window\WindowBox.rc">
-      <Filter>리소스 파일</Filter>
-    </ResourceCompile>
+    <ClInclude Include="Utils\Transform.h">
+      <Filter>헤더 파일\Tools\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>헤더 파일\Tools\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

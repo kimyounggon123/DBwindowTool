@@ -2,9 +2,9 @@
 #define _UI_H
 
 #include "..\stdafx.h"
-#include "..\Transform.h"
+#include "..\Utils\Transform.h"
 #include <string>
-
+#include "mysql.h"
 class UIElement
 {
 	int ID;
@@ -133,14 +133,33 @@ public:
 
 #include <commctrl.h> // ListView 사용
 #pragma comment(lib, "Comctl32.lib")
+
+struct CellData
+{
+	enum_field_types type;
+	std::wstring value;
+	bool isRealNULL; // 실제 DB의 NULL 여부를 저장하는 플래그
+
+	CellData(enum_field_types type, const std::wstring& value = L"", bool isRealNULL = false) : type(type), value(value), isRealNULL(isRealNULL)
+	{}
+
+	bool IsTime()
+	{
+		return type == MYSQL_TYPE_DATETIME || type == MYSQL_TYPE_TIMESTAMP;
+	}
+
+	bool IsNum()
+	{
+		return type == MYSQL_TYPE_SHORT || type == MYSQL_TYPE_LONG || type == MYSQL_TYPE_LONGLONG || type == MYSQL_TYPE_FLOAT || type == MYSQL_TYPE_DOUBLE || type == MYSQL_TYPE_INT24;
+	}
+};
+
 class TableUI : public WindowUI
 {
-
-
 	bool useVirtualTable;
 	// 헤더나 클래스 멤버로 선언
 	std::vector<std::wstring> columns; // 컬럼명 저장
-	std::vector<std::vector<std::wstring>> tableData; // 실제 데이터 저장
+	std::vector<std::vector<CellData>> tableData; // 실제 데이터 저장
 public:
 	TableUI(const std::wstring& imagePath, const Position& pos, bool useVirtualTable = true) :
 		WindowUI(imagePath, pos), useVirtualTable(useVirtualTable)
@@ -171,17 +190,41 @@ public:
 	}
 
 	void SetColumns(const std::vector<std::wstring>& cols);
-	void AddRow(const std::vector<std::wstring>& data);
+	void AddRow(const std::vector<CellData>& data);
 	void SetItemCount();
 	void Clear();
 
 	size_t GetColumnSize() { return columns.size(); }
 	size_t GetRowSize() { return tableData.size(); }
 
-	LPWSTR GetRealItem(int r, int c) { return  (LPWSTR)tableData[r][c].c_str(); }
+	const CellData& GetRealItem(int r, int c) { return tableData[r][c]; }
 };
 
 
+class TreeView : public WindowUI
+{
+public:
+	TreeView(const std::wstring& imagePath, const Position& pos) :
+		WindowUI(imagePath, pos)
+	{}
+	TreeView(const std::wstring& imagePath, const Transform2DINT& transform) :
+		WindowUI(imagePath, transform)
+	{}
+
+	~TreeView() = default;
+
+	HTREEITEM AddItem(HTREEITEM hParent, const std::wstring& name)
+	{
+		TVINSERTSTRUCT tvis = { 0 };
+		tvis.hParent = hParent;
+		tvis.hInsertAfter = TVI_LAST;
+		tvis.item.mask = TVIF_TEXT;
+		tvis.item.pszText = (LPWSTR)name.c_str();
+		return (HTREEITEM)SendMessage(winUI, TVM_INSERTITEM, 0, (LPARAM)&tvis);
+	}
+
+	void DeleteAll() { TreeView_DeleteAllItems(winUI); }
+};
 
 
 #endif

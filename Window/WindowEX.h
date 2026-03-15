@@ -8,12 +8,14 @@
 #include "..\UI\UI.h"
 #include "..\UI\UImanager.h"
 #include "..\UI\Button.h"
-
+#include "..\Utils\Timer.h"
 #include <iostream>
 #include <sstream>   // wstringstream
-#include <iomanip>
-#include <chrono>
-#include <ctime>
+
+#include <Richedit.h>
+#include <CommCtrl.h>
+#pragma comment(lib, "comctl32.lib")
+
 struct WindowInformations
 {
 	HWND hwnd;
@@ -38,16 +40,19 @@ class WindowEX
 protected:
 	static HFONT hFontNormal;
 	static HFONT hFontBold;
+	static HFONT hFontItalic;
+	static HFONT hFontBoldItalic;
 
 	static HINSTANCE hInstance; // program instance handle
 	static char szText[256];
+	static Timer timer;
 
 	WindowInformations winInfo;
-
 	UImanager& uiManager;
 
 	static std::wstring GetTimeString();
 	static std::wstring GetTimeStringWin32();
+
 public:
 	WindowEX(WindowInformations windowInfo) :
 		winInfo(windowInfo), uiManager(UImanager::GetInstance())

@@ -1,7 +1,7 @@
 #include "DatabaseAccount.h"
 #include <algorithm>
 
-DatabaseAccount::DatabaseAccount(): conn(nullptr), res(nullptr), row(nullptr), isTransaction(false)
+DatabaseAccount::DatabaseAccount(): conn(nullptr), res(nullptr), row(nullptr), isTransaction(false), isDirty(false)
 {}
 
 DatabaseAccount::~DatabaseAccount() 
@@ -93,18 +93,23 @@ std::string DatabaseAccount::ExtractDatabaseName(const std::string& query)
 bool DatabaseAccount::ExecuteQuery(const std::string& query)
 {
 	if (conn == nullptr) return false;
-
 	freeResult(); // 이전 결과 정리
+
 	if (mysql_query(conn, query.c_str()) != 0) return false;
 	res = mysql_store_result(conn);
 	bool isOK = mysql_errno(conn) == 0;
-	if (isOK && IsUseQuery(query))
+	if (isOK)
 	{
-		DBinfo.SetDatabaseName(ExtractDatabaseName(query));
+		if (IsUseQuery(query)) DBinfo.SetDatabaseName(ExtractDatabaseName(query));
+		if (isTransaction && mysql_affected_rows(conn) > 0)	isDirty = true;
 	}
+	
 	return isOK; // 결과가 나오는 쿼리문은 true
 }
-
+bool DatabaseAccount::ExecuteQuery(const std::wstring& query)
+{
+	return ExecuteQuery(WStringToUTF8(query));
+}
 
 bool DatabaseAccount::StartTransaction()
 {
@@ -117,12 +122,14 @@ bool DatabaseAccount::Commit()
 {
 	if (!ExecuteQuery("COMMIT;")) return false;
 	if (isTransaction) isTransaction = false;
+	isDirty = false;
 	return true;
 }
 bool DatabaseAccount::Rollback()
 {
 	if (!ExecuteQuery("ROLLBACK;")) return false;
 	if (isTransaction) isTransaction = false;
+	isDirty = false;
 	return true;
 }
 

@@ -4,21 +4,24 @@
 
 #define IDC_STATIC                      -1
 
-// 대화상자 정의
-#define IDD_DIALOG1                     1000
-#define IDD_DIALOG2						1001
 
+//// Define Database tool window 
+// 
+// Window
+#define ID_EDIT 1
+#define ID_RESULT_LOG 2
+#define ID_LIST_VIEW 3
 
-#define IDD_LOGIN_DIALOG				1003
-#define IDC_EDIT_USERID					2001
-#define IDC_EDIT_PASSWORD				2002
-#define ID_SIGN_UP                      2003
-
-
-
-// Define Database tool window 
-#define ID_DATBASE_WIN 1000
-
+// btn
+#define ID_LOGIN 1000
+#define ID_LOGOUT 1001
+#define ID_SUBMIT 1002
+#define ID_AUTOCOMMIT 1003
+// sub menu
+#define ID_MENU_LOAD_QUERY 3000
+#define ID_MENU_SAVE_QUERY 3001
+#define ID_MENU_EXIT 3002
+#define ID_MENU_CLEAR_HISTORY 3003
 
 
 

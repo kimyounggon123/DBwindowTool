@@ -5,7 +5,9 @@ void TableUI::SetColumns(const std::vector<std::wstring>& cols)
     // column 생성은 모드 관계없이 수행
     columns = cols;
     LVCOLUMN col{};
-    col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+    col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM | LVCF_FMT;
+
+    
     for (int i = 0; i < cols.size(); ++i)
     {
         col.pszText = (LPWSTR)cols[i].c_str();
@@ -14,7 +16,7 @@ void TableUI::SetColumns(const std::vector<std::wstring>& cols)
         SendMessageW(winUI, LVM_INSERTCOLUMNW, i, (LPARAM)&col);
     }
 }
-void TableUI::AddRow(const std::vector<std::wstring>& data)
+void TableUI::AddRow(const std::vector<CellData>& data)
 {
     if (data.size() != columns.size()) return;
     tableData.push_back(data);
@@ -26,14 +28,14 @@ void TableUI::AddRow(const std::vector<std::wstring>& data)
         LVITEM item{};
         item.mask = LVIF_TEXT;
         item.iItem = index;
-        item.pszText = (LPWSTR)data[0].c_str();
+        item.pszText = (LPWSTR)data[0].value.c_str();
 
         SendMessageW(winUI, LVM_INSERTITEM, 0, (LPARAM)&item);
         for (int i = 1; i < data.size(); ++i)
         {
             LVITEM sub{};
             sub.iSubItem = i;
-            sub.pszText = (LPWSTR)data[i].c_str();
+            sub.pszText = (LPWSTR)data[i].value.c_str();
 
             SendMessageW(winUI, LVM_SETITEMTEXT, index, (LPARAM)&sub);
         }
@@ -47,8 +49,6 @@ void TableUI::Clear()
 {
     columns.clear();
     tableData.clear();
-
-    
 
     int colCount = Header_GetItemCount(ListView_GetHeader(winUI));
     for (int i = colCount - 1; i >= 0; --i)

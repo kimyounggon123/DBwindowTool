@@ -135,10 +135,11 @@
     <ClCompile Include="JSON\Jsonify.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ToolFramework.cpp" />
-    <ClCompile Include="Transform.cpp" />
     <ClCompile Include="UI\Button.cpp" />
     <ClCompile Include="UI\UI.cpp" />
     <ClCompile Include="UI\UImanager.cpp" />
+    <ClCompile Include="Utils\Timer.cpp" />
+    <ClCompile Include="Utils\Transform.cpp" />
     <ClCompile Include="Window\DatabaseWindow.cpp" />
     <ClCompile Include="Window\WindowEX.cpp" />
   </ItemGroup>
@@ -149,17 +150,15 @@
     <ClInclude Include="JSON\json.hpp" />
     <ClInclude Include="JSON\Jsonify.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Timer.h" />
     <ClInclude Include="ToolFramework.h" />
-    <ClInclude Include="Transform.h" />
     <ClInclude Include="UI\Button.h" />
     <ClInclude Include="UI\UI.h" />
     <ClInclude Include="UI\UImanager.h" />
+    <ClInclude Include="Utils\Transform.h" />
     <ClInclude Include="Window\DatabaseWindow.h" />
     <ClInclude Include="Window\resource.h" />
     <ClInclude Include="Window\WindowEX.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Window\WindowBox.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

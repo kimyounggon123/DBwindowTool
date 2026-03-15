@@ -3,7 +3,9 @@
 HINSTANCE WindowEX::hInstance = NULL;
 HFONT WindowEX::hFontNormal = NULL;
 HFONT WindowEX::hFontBold = NULL;
-
+HFONT WindowEX::hFontItalic = NULL;
+HFONT WindowEX::hFontBoldItalic = NULL;
+Timer WindowEX::timer;
 
 char WindowEX::szText[256] = { 0 };
 
@@ -24,14 +26,13 @@ std::wstring WindowEX::GetTimeString()
 
     return ss.str();
 }
+
 std::wstring WindowEX::GetTimeStringWin32()
 {
-    SYSTEMTIME st;
-    GetLocalTime(&st);
+    auto st = timer.GetCurrTime();
 
     wchar_t buffer[16];
-    swprintf_s(buffer, L"[%02d:%02d:%02d]",
-        st.wHour, st.wMinute, st.wSecond);
+    swprintf_s(buffer, L"[%02d:%02d:%02d]", st.tm_hour, st.tm_min, st.tm_sec);
 
     return buffer;
 }
@@ -71,6 +72,32 @@ bool WindowEX::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
         0, 0, 0,
         FW_BOLD,          // 폰트
         FALSE, FALSE, FALSE, // 이탤릭, 언더바, 크로스바
+        DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS,
+        CLIP_DEFAULT_PRECIS,
+        DEFAULT_QUALITY,
+        DEFAULT_PITCH | FF_DONTCARE,
+        L"맑은 고딕"
+    );
+
+    hFontItalic = CreateFontW(
+        18,                 // 높이
+        0, 0, 0,
+        FW_NORMAL,          // 폰트
+        TRUE, FALSE, FALSE, // 이탤릭, 언더바, 크로스바
+        DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS,
+        CLIP_DEFAULT_PRECIS,
+        DEFAULT_QUALITY,
+        DEFAULT_PITCH | FF_DONTCARE,
+        L"맑은 고딕"
+    );
+
+    hFontBoldItalic = CreateFontW(
+        18,                 // 높이
+        0, 0, 0,
+        FW_BOLD,          // 폰트
+        TRUE, FALSE, FALSE, // 이탤릭, 언더바, 크로스바
         DEFAULT_CHARSET,
         OUT_DEFAULT_PRECIS,
         CLIP_DEFAULT_PRECIS,

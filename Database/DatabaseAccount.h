@@ -1,13 +1,11 @@
 #ifndef _DATABASEACCOUNT_H
 #define _DATABASEACCOUNT_H
 
-#include <string>
+#include "..\stdafx.h"
 #include "mysql.h"
 #include <Windows.h>
 
 // 실제 데이터베이스를 다루는 account 클래스
-
-
 
 class DatabaseUser
 {
@@ -83,6 +81,9 @@ class DatabaseAccount
 	MYSQL_ROW row;
 
 	bool isTransaction;
+	bool isDirty;
+
+	std::vector<std::wstring> prevQuerys;
 
 	bool IsUseQuery(const std::string query);
 	std::string ExtractDatabaseName(const std::string& query);
@@ -96,6 +97,8 @@ public:
 	void Close();
 
 	bool ExecuteQuery(const std::string& query); // 실제 쿼리문 실행
+	bool ExecuteQuery(const std::wstring& query); // 실제 쿼리문 실행
+
 	std::string GetLastError();
 	std::wstring GetLastErrorW();
 
@@ -110,7 +113,7 @@ public:
 	bool StartTransaction();
 	bool Commit();
 	bool Rollback();
-
+	bool IsDirty() const { return isDirty; }
 
 
 	std::string WStringToUTF8(const std::wstring& wstr);
