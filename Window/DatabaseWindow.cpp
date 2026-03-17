@@ -19,10 +19,13 @@ WindowUI* currDatabaseTag = nullptr;
 WindowUI* currID = nullptr;
 WindowUI* currDatabase = nullptr;
 
+
+WindowUI* editTag = nullptr;
 WindowUI* editUI = nullptr;
 WindowUI* resultLog = nullptr;
 
 Button* submitButton = nullptr;
+Button* refreshButton = nullptr;
 Toggle* autoCommitToggle = nullptr;
 
 
@@ -56,11 +59,11 @@ void DatabaseWindow::InitializeUI()
     currDatabaseTag = currDBTagptr.get();
     uiManager.AddUI(std::move(currDBTagptr));
 
-    std::unique_ptr<WindowUI> currIDptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{720, 10}, Vector2Int{190, 20}}));
+    std::unique_ptr<WindowUI> currIDptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{720, 10}, Vector2Int{210, 20}}));
     currID = currIDptr.get();
     uiManager.AddUI(std::move(currIDptr));
 
-    std::unique_ptr<WindowUI> currDBptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{720, 32}, Vector2Int{190, 20} }));
+    std::unique_ptr<WindowUI> currDBptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{720, 32}, Vector2Int{210, 20} }));
     currDatabase = currDBptr.get();
     uiManager.AddUI(std::move(currDBptr));
 
@@ -88,20 +91,28 @@ void DatabaseWindow::InitializeUI()
     resultLog = result.get();
     uiManager.AddUI(std::move(result));
 
+    std::unique_ptr<WindowUI> editTagPtr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 280}, Vector2Int{75, 20} }));
+    editTag = editTagPtr.get();
+    uiManager.AddUI(std::move(editTagPtr));
+
     std::unique_ptr<WindowUI> edit = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 300}, Vector2Int{460, 200} }));
     editUI = edit.get();
     uiManager.AddUI(std::move(edit));
 
-    std::unique_ptr<Button> submit = std::make_unique<Button>(L"", Transform2DINT({ Position{1240, 530}, Vector2Int{160, 40}}));
+    std::unique_ptr<Button> submit = std::make_unique<Button>(L"", Transform2DINT({ Position{1240, 510}, Vector2Int{160, 40}}));
     submitButton = submit.get();
     uiManager.AddUI(std::move(submit));
 
-    std::unique_ptr<Toggle> autoCommitTgl = std::make_unique<Toggle>(L"", Transform2DINT({ Position{1040, 530}, Vector2Int{160, 40} }));
+    std::unique_ptr<Button> refresh = std::make_unique<Button>(L"", Transform2DINT({ Position{640, 510}, Vector2Int{100, 30} }));
+    refreshButton = refresh.get();
+    uiManager.AddUI(std::move(refresh));
+
+    std::unique_ptr<Toggle> autoCommitTgl = std::make_unique<Toggle>(L"", Transform2DINT({ Position{1040, 510}, Vector2Int{160, 40} }));
     autoCommitToggle = autoCommitTgl.get();
     uiManager.AddUI(std::move(autoCommitTgl));
 
     // 트리 뷰
-    std::unique_ptr<TreeView> tableTreeViewUI = std::make_unique<TreeView>(L"", Transform2DINT({ Position{640, 70}, Vector2Int{270, 500} }));
+    std::unique_ptr<TreeView> tableTreeViewUI = std::make_unique<TreeView>(L"", Transform2DINT({ Position{640, 70}, Vector2Int{290, 430} }));
     hTreeView = tableTreeViewUI.get();
     uiManager.AddUI(std::move(tableTreeViewUI));
 
@@ -116,7 +127,6 @@ void DatabaseWindow::Shutdown()
     SAFE_FREE(account);
 }
 
-
 LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     UImanager& ui = UImanager::GetInstance();
@@ -129,8 +139,8 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
     case WM_SIZE:
     {
-        int width = LOWORD(lParam);
-        listView->Resize(width);
+        //int width = LOWORD(lParam);
+        listView->Resize();
         break;
     }
 
@@ -153,6 +163,10 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
             SetTransactionMode(hwnd, msg, wParam, lParam);
             break;
 
+        case ID_REFRESH:
+            RefreshAll();
+            break;
+
         case ID_MENU_LOAD_QUERY:
             // 파일 열기 다이얼로그 띄우는 함수 호출
             //LoadQueryFromFile();
@@ -171,6 +185,7 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
     }
     case WM_NOTIFY:
     {
+        NotifyTreeClick(hwnd, msg, wParam, lParam);
         NotifyTableMaking(hwnd, msg, wParam, lParam);
         return NotifyTableColoring(hwnd, msg, wParam, lParam);
         break;
@@ -246,37 +261,81 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 
     // query 입력 창
-    editUI->Create(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_AUTOVSCROLL | WS_VSCROLL | WS_TABSTOP | ES_MULTILINE | ES_WANTRETURN, hwnd, (HMENU)ID_EDIT, WindowEX::hInstance);
+    LoadLibrary(L"Msftedit.dll"); // Rich Edit 4.1 버전 사용
+    editTag->Create(0, L"STATIC", L"Input Box", WS_CHILD | WS_VISIBLE, hwnd, nullptr, WindowEX::hInstance);
+    editTag->SetFont(hFontBold);
+
+    editUI->Create(WS_EX_CLIENTEDGE, MSFTEDIT_CLASS, L"", WS_CHILD | WS_VISIBLE | ES_AUTOVSCROLL | WS_VSCROLL | WS_TABSTOP | ES_MULTILINE | ES_WANTRETURN, hwnd, (HMENU)ID_EDIT, WindowEX::hInstance);
+    editUI->SendToHWND(EM_SETEVENTMASK, 0, ENM_CHANGE);
     editUI->SetFont(hFontNormal);
 
     submitButton->Create(0, L"BUTTON", L"Submit", WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | WS_TABSTOP, hwnd, (HMENU)ID_SUBMIT, hInstance);
     submitButton->SetFont(hFontBold);
+
+    refreshButton->Create(0, L"BUTTON", L"Refresh", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, hwnd, (HMENU)ID_REFRESH, hInstance);
+    refreshButton->SetFont(hFontBold);
 
     autoCommitToggle->Create(0, L"BUTTON", L"Transaction Mode: OFF", WS_VISIBLE | WS_CHILD | BS_PUSHLIKE | BS_AUTOCHECKBOX, hwnd, (HMENU)ID_AUTOCOMMIT, hInstance);
     autoCommitToggle->SetToggled(false);
     autoCommitToggle->SetFont(hFontBold);
 
     // 결과 및 에러 출력 창
-    LoadLibrary(L"Msftedit.dll"); // Rich Edit 4.1 버전 사용
     resultLog->Create(WS_EX_CLIENTEDGE, MSFTEDIT_CLASS, L"", WS_CHILD | WS_VISIBLE | ES_AUTOVSCROLL | WS_VSCROLL | ES_MULTILINE | ES_READONLY, hwnd, (HMENU)ID_RESULT_LOG, WindowEX::hInstance);
     resultLog->SetFont(hFontNormal);
     resultLog->SendToHWND(EM_SETBKGNDCOLOR, 0, (LPARAM)RGB(230, 230, 230));
 
     // table
     listView->Create(WS_EX_CLIENTEDGE, WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | ES_READONLY | LVS_REPORT | LVS_SINGLESEL | LVS_OWNERDATA, hwnd, (HMENU)ID_LIST_VIEW, hInstance);
-    
     hTreeView->Create(0, WC_TREEVIEW, L"Tree View", WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT, hwnd, (HMENU)5000, hInstance);  
-    std::wstring dbName = L"wow";
-    HTREEITEM hDbItem = hTreeView->AddItem(TVI_ROOT, dbName);
-    hDbItem = hTreeView->AddItem(hDbItem, dbName);
-
 }
 
 
-void DatabaseWindow::RefreshTree()
+bool DatabaseWindow::RefreshTree()
 {
-    hTreeView->DeleteAll();
+    hTreeView->DeleteAll(); //  먼저 삭제
+    if (!account->ExecuteQuery(L"SHOW DATABASES"))
+    {
+        ShowResultMsg(account->GetLastErrorW(), true);
+        return false;
+    }
+    MYSQL_RES* dbRes = account->GetResult();
+    MYSQL_ROW row;
 
+
+    // 우선 DB 이름 다 가져오기
+    std::vector<std::wstring> dbNames;
+    while ((row = account->fetchRowFromOutside(dbRes))) 
+    {
+        if (row[0])
+        {
+            dbNames.push_back(account->UTF8ToWString(row[0]));
+        }
+    }
+
+    for (const auto& name : dbNames) 
+    {
+        HTREEITEM hDbItem = hTreeView->AddItem(TVI_ROOT, name);
+
+        std::string query = "SHOW TABLES FROM " + account->WStringToUTF8(name);
+
+        if (account->ExecuteQuery(query.c_str()))
+        {
+            MYSQL_RES* tableRes = account->GetResult();
+            MYSQL_ROW tableRow;
+            while ((tableRow = account->fetchRowFromOutside(tableRes)))
+            {
+                if (tableRow[0]) 
+                {
+                    hTreeView->AddItem(hDbItem, account->UTF8ToWString(tableRow[0]));
+                }
+            }
+        }
+    }
+
+    // 화면 갱신 후 다시 그리기. 깜박임 방지
+    hTreeView->SendToHWND(WM_SETREDRAW, TRUE, 0); //SendMessage(hTreeView->GetHWND(), WM_SETREDRAW, TRUE, 0);
+    InvalidateRect(hTreeView->GetHWND(), NULL, TRUE);
+    return true;
 }
 
 void DatabaseWindow::LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -290,7 +349,8 @@ void DatabaseWindow::LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         currID->SendToHWND(WM_SETTEXT, 0, (LPARAM)idText.c_str());
         currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->UTF8ToWString("None").c_str());
         ShowResultMsg(L"Log In success", false);
-        WorkQueryProcess(L"SHOW DATABASES;");
+        RefreshTree();
+        //WorkQueryProcess(L"SHOW DATABASES;");
     }
     else
     {
@@ -340,16 +400,11 @@ bool DatabaseWindow::WorkQueryProcess(const std::wstring& query)
             
             CellData cell{ fields[i].type, value, isRealNULL };
             oneRow.push_back(cell);
-
-            /*
-            if (row[i]) oneRow.push_back(account->UTF8ToWString(row[i]));
-            else oneRow.push_back(L"NULL");
-            */
         }
         listView->AddRow(oneRow);
     }
     listView->SetItemCount();
-
+    listView->Resize();
     //prevQuerys.push_back(query); // 사용 쿼리 저장
     return true;
 }
@@ -377,7 +432,6 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     //timer.GetDuration();
 }
 
-
 void DatabaseWindow::StartTransaction()
 {
     bool result = account->StartTransaction();
@@ -397,6 +451,63 @@ void DatabaseWindow::Rollback()
     ShowResultMsg(resultLog);
 }
 
+void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    
+    LPNMHDR lpnmhdr = (LPNMHDR)lParam;
+    // 트리뷰에서 보낸 메시지인지 확인
+    if (lpnmhdr->hwndFrom == hTreeView->GetHWND())
+    {
+        switch (lpnmhdr->code)
+        {
+        case NM_DBLCLK: // 항목 선택이 변경되었을 때
+        {
+            // 1. 현재 선택된 아이템(테이블) 핸들 가져오기
+            HTREEITEM hSelected = TreeView_GetSelection(hTreeView->GetHWND());
+            if (hSelected == NULL) break;
+
+          
+
+            if (hSelected != NULL)
+            {
+          
+                // 자식 이름
+                wchar_t itemText[256];
+                TVITEM tvi = { 0 };
+                tvi.hItem = hSelected;
+                tvi.mask = TVIF_TEXT; 
+                tvi.pszText = itemText;
+                tvi.cchTextMax = 256;
+
+                if (TreeView_GetItem(hTreeView->GetHWND(), &tvi))
+                {
+                    // 부모 이름
+                    HTREEITEM hParent = TreeView_GetParent(hTreeView->GetHWND(), hSelected);
+                    wchar_t dbName[256];
+                    TVITEM tviParent = { 0 };
+                    tviParent.hItem = hParent;
+                    tviParent.mask = TVIF_TEXT;
+                    tviParent.pszText = dbName;
+                    tviParent.cchTextMax = 256;
+                    TreeView_GetItem(hTreeView->GetHWND(), &tviParent);
+
+                    if (hParent != NULL)
+                    {
+                        std::wstring db = dbName;
+                        if (WorkQueryProcess(L"USE " + db + L";")) currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
+                        else ShowResultMsg(account->GetLastErrorW(), true);
+
+                        std::wstring tableName = itemText;
+                        if (!WorkQueryProcess(L"SELECT * FROM " + tableName + L";")) ShowResultMsg(account->GetLastErrorW(), true);
+                        
+                    }
+                }
+            }
+        }
+        break;
+        }
+    }
+}
 void DatabaseWindow::NotifyTableMaking(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     LPNMHDR pnmh = (LPNMHDR)lParam;
@@ -432,7 +543,6 @@ void DatabaseWindow::NotifyTableMaking(HWND hwnd, UINT msg, WPARAM wParam, LPARA
     timer.End();
     //timer.GetDuration();
 }
-
 uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     LPNMHDR pnmh = (LPNMHDR)lParam;
@@ -458,23 +568,26 @@ uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam,
             CellData value = listView->GetRealItem(row, col);
             if (value.isRealNULL)
             {
-                lplvcd->clrText = RGB(255, 0, 0);
                 SelectObject(lplvcd->nmcd.hdc, hFontBoldItalic); // 이탤릭으로 바꿈
+                lplvcd->clrText = RGB(255, 0, 0);
             }
 
             else if (value.IsNum())
             {
+                SelectObject(lplvcd->nmcd.hdc, hFontNormal);
                 lplvcd->clrText = RGB(0, 0, 180);
             }
 
             else if (value.IsTime())
             {
+                SelectObject(lplvcd->nmcd.hdc, hFontNormal);
                 lplvcd->clrText = RGB(0, 144, 0);
                 //SelectObject(lplvcd->nmcd.hdc, hFontBold); 
             }
 
-            else
+            else // 문자열
             {
+                SelectObject(lplvcd->nmcd.hdc, hFontNormal);
                 lplvcd->clrText = RGB(0, 0, 0);
             }
             return CDRF_DODEFAULT;
@@ -486,7 +599,6 @@ uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam,
 
     return CDRF_DODEFAULT;
 }
-
 
 void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError)
 {
@@ -517,7 +629,6 @@ void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError)
     resultLog->SendToHWND(EM_SETSEL, -1, -1); 
     resultLog->SendToHWND(WM_VSCROLL, SB_BOTTOM, 0);
 }
-
 void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (!autoCommitToggle->IsToggled())
@@ -559,4 +670,9 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
             autoCommitToggle->SetToggled(false);
         }
     }
+}
+
+void DatabaseWindow::RefreshAll()
+{
+    RefreshTree();
 }

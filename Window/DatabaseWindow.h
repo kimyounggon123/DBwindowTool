@@ -46,17 +46,21 @@ class DatabaseWindow : public WindowEX
 
 	static void ShowResultMsg(const std::wstring& str, bool isError = false);
 	static void LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	static void RefreshTree();
+	static bool RefreshTree();
 
 	static void StartTransaction();
 	static void Commit();
 	static void Rollback();
 
+
+	static void NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static void NotifyTableMaking(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static uint32_t NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	
 
 	static void SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	static void RefreshAll();
 public:
 	DatabaseWindow(WindowInformations info, bool isAdmin) :
 		WindowEX(info), isAdmin(isAdmin), icex{}

@@ -103,6 +103,8 @@ public:
 	std::wstring GetLastErrorW();
 
 	MYSQL_ROW fetchRow(); // 쿼리문 결과를 row 형태로 가져 옴
+	MYSQL_ROW fetchRowFromOutside(MYSQL_RES* resOutside) {return resOutside == nullptr ? nullptr : mysql_fetch_row(resOutside);}
+	MYSQL_RES* GetResult() { return res; }
 	void freeResult(); // 결과 free
 
 	// query 실행 후 호출하기

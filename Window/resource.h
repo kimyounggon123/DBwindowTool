@@ -17,6 +17,8 @@
 #define ID_LOGOUT 1001
 #define ID_SUBMIT 1002
 #define ID_AUTOCOMMIT 1003
+#define ID_REFRESH 1004
+
 // sub menu
 #define ID_MENU_LOAD_QUERY 3000
 #define ID_MENU_SAVE_QUERY 3001

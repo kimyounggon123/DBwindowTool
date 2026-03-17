@@ -180,15 +180,20 @@ public:
 
 		return result;
 	}
-	void Resize(int width)
+	void Resize()
 	{
 		//double part = columnSize;
+		//int currentWidth = ListView_GetColumnWidth(winUI, 0);
 		for (int i = 0; i < columns.size(); i++)
 		{
-			ListView_SetColumnWidth(winUI, i, width * 0.1);
+			SendMessage(winUI, LVM_SETCOLUMNWIDTH, i, MAKELPARAM(LVSCW_AUTOSIZE_USEHEADER, 0)); // 헤더 길이에 맞춤
+			//SendMessage(winUI, LVM_SETCOLUMNWIDTH, i, MAKELPARAM(LVSCW_AUTOSIZE, 0)); // 데이터 내용에 맞춤
+			int currentWidth = ListView_GetColumnWidth(winUI, i);
+			ListView_SetColumnWidth(winUI, i, currentWidth + 20);
 		}
 	}
 
+	
 	void SetColumns(const std::vector<std::wstring>& cols);
 	void AddRow(const std::vector<CellData>& data);
 	void SetItemCount();
