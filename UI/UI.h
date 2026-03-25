@@ -133,7 +133,6 @@ public:
 
 #include <commctrl.h> // ListView 사용
 #pragma comment(lib, "Comctl32.lib")
-
 struct CellData
 {
 	enum_field_types type;
@@ -205,7 +204,6 @@ public:
 	const CellData& GetRealItem(int r, int c) { return tableData[r][c]; }
 };
 
-
 class TreeView : public WindowUI
 {
 public:
@@ -232,4 +230,87 @@ public:
 };
 
 
+#include <deque>
+/*
+	currQuery의 저장 기준을 어떻게 정해야 하는가?
+	1. 처음 탐색 시 저장. 이 후 저장하지 않다가 submit시에 다시 초기화.
+	2. 탐색하다가 다시 -1 index로 돌아갈 경우마다 저장하기 (채택!)
+*/
+class HistoryListBox : public WindowUI
+{
+	int maxSize;
+	int currIndex;
+
+	std::wstring currQuery;
+	std::deque<std::wstring> historyList;
+
+	void FixIndex()
+	{
+		if (historyList.empty())
+		{
+			currIndex = -1;
+			return;
+		}
+
+		if (currIndex < -1) currIndex = -1;
+		else if (currIndex >= (int)historyList.size())
+			currIndex = (int)historyList.size() - 1;
+	}
+
+public:
+	HistoryListBox(const std::wstring& imagePath, const Position& pos, int maxSize = 20) :
+		WindowUI(imagePath, pos), maxSize(maxSize), currIndex(-1)
+	{}
+	HistoryListBox(const std::wstring& imagePath, const Transform2DINT& transform, int maxSize = 20) :
+		WindowUI(imagePath, transform), maxSize(maxSize), currIndex(-1)
+	{}
+
+	void AddQuery(const std::wstring & sql)
+	{
+		historyList.push_front(sql);
+		//historyList.push_back(sql);
+		SendMessage(winUI, LB_INSERTSTRING, 0, (LPARAM)sql.c_str());
+
+		// 너무 많으면 삭제
+		if (GetCount() > maxSize) 
+		{
+			historyList.pop_back();
+			//historyList.pop_front();
+			SendMessage(winUI, LB_DELETESTRING, GetCount() - 1, 0);
+		}
+	}
+
+	std::wstring GetSelectedText()
+	{
+		int idx = SendMessage(winUI, LB_GETCURSEL, 0, 0);
+		if (idx == LB_ERR) return L"";
+
+		int len = SendMessage(winUI, LB_GETTEXTLEN, idx, 0);
+		std::wstring buf(len, L'\0');
+		SendMessage(winUI, LB_GETTEXT, idx, (LPARAM)buf.data());
+		return buf;
+	}
+
+	std::wstring GetTextFromIndex()
+	{
+		if (currIndex == -1) return currQuery;
+		return historyList[currIndex];
+	}
+
+	void TravelIndex(int dir)
+	{
+		currIndex += dir;
+		FixIndex();
+	}
+	
+	void SaveCurrQuery(const std::wstring& query)
+	{
+		currQuery = query;
+	}
+
+
+	int GetCurrIndex() { return currIndex; }
+	int GetCount()  { return historyList.size(); }
+
+};
 #endif

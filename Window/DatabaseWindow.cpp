@@ -1,11 +1,10 @@
 #include "DatabaseWindow.h"
 
 DatabaseAccount* DatabaseWindow::account = nullptr;
-std::vector<std::wstring> DatabaseWindow::prevQuerys;
-
-//DBQueryExamples DatabaseWindow::queryExample;
+DBQueryExamples DatabaseWindow::queryExample;
 
 HMENU DatabaseWindow::hMenuBar = NULL;
+
 
 // 여러 ui들
 WindowUI* id = nullptr;
@@ -19,7 +18,6 @@ WindowUI* currDatabaseTag = nullptr;
 WindowUI* currID = nullptr;
 WindowUI* currDatabase = nullptr;
 
-
 WindowUI* editTag = nullptr;
 WindowUI* editUI = nullptr;
 WindowUI* resultLog = nullptr;
@@ -28,11 +26,9 @@ Button* submitButton = nullptr;
 Button* refreshButton = nullptr;
 Toggle* autoCommitToggle = nullptr;
 
-
-
 TableUI* listView = nullptr;
-
-TreeView* hTreeView;
+TreeView* hTreeView = nullptr;
+HistoryListBox* prevQueryListBox = nullptr;
 
 bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 {
@@ -48,7 +44,7 @@ void DatabaseWindow::InitializeUI()
     icex.dwSize = sizeof(icex);
     icex.dwICC = ICC_LISTVIEW_CLASSES;
     InitCommonControlsEx(&icex);
-    
+   
 
     // 현재 로그인한 정보
     std::unique_ptr<WindowUI> currIDTagptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{640, 10}, Vector2Int{80, 20}}));
@@ -116,6 +112,10 @@ void DatabaseWindow::InitializeUI()
     hTreeView = tableTreeViewUI.get();
     uiManager.AddUI(std::move(tableTreeViewUI));
 
+    std::unique_ptr<HistoryListBox> prevLogBox = std::make_unique<HistoryListBox>(L"", Transform2DINT({ Position{940, 280}, Vector2Int{290, 200} }));
+    prevQueryListBox = prevLogBox.get();
+    uiManager.AddUI(std::move(prevLogBox));
+
     // 테이블
     std::unique_ptr<TableUI> listViewUI = std::make_unique<TableUI>(L"", Transform2DINT({ Position{10, 10}, Vector2Int{620, 710} }));
     listView = listViewUI.get();
@@ -167,6 +167,10 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
             RefreshAll();
             break;
 
+        case ID_PREV_QUERYLIST:
+            editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetSelectedText().c_str());
+            break;
+
         case ID_MENU_LOAD_QUERY:
             // 파일 열기 다이얼로그 띄우는 함수 호출
             //LoadQueryFromFile();
@@ -180,6 +184,7 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
         case ID_MENU_EXIT:
             DestroyWindow(hwnd);
             break;
+
         }
         break;
     }
@@ -215,6 +220,7 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
 void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    /*
     // 메뉴 생성
     hMenuBar = CreateMenu();
 
@@ -233,7 +239,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
     // 5. 윈도우에 메뉴바 적용
     SetMenu(hwnd, hMenuBar);
-
+    */
     // id 창
     id->Create(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, hwnd, nullptr, WindowEX::hInstance);
     id->SetFont(hFontNormal);
@@ -267,7 +273,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
     editUI->Create(WS_EX_CLIENTEDGE, MSFTEDIT_CLASS, L"", WS_CHILD | WS_VISIBLE | ES_AUTOVSCROLL | WS_VSCROLL | WS_TABSTOP | ES_MULTILINE | ES_WANTRETURN, hwnd, (HMENU)ID_EDIT, WindowEX::hInstance);
     editUI->SendToHWND(EM_SETEVENTMASK, 0, ENM_CHANGE);
-    editUI->SetFont(hFontNormal);
+    SetWindowSubclass(editUI->GetHWND(), RichEditSubProc, 1, (DWORD_PTR)nullptr);
 
     submitButton->Create(0, L"BUTTON", L"Submit", WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | WS_TABSTOP, hwnd, (HMENU)ID_SUBMIT, hInstance);
     submitButton->SetFont(hFontBold);
@@ -287,6 +293,9 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     // table
     listView->Create(WS_EX_CLIENTEDGE, WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | ES_READONLY | LVS_REPORT | LVS_SINGLESEL | LVS_OWNERDATA, hwnd, (HMENU)ID_LIST_VIEW, hInstance);
     hTreeView->Create(0, WC_TREEVIEW, L"Tree View", WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT, hwnd, (HMENU)5000, hInstance);  
+
+    //prevQueryListBox->Create(0, WC_LISTBOX, L"prevList", WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY, hwnd, (HMENU)ID_PREV_QUERYLIST, hInstance);
+    //prevQueryListBox->SetFont(hFontBold);
 }
 
 
@@ -405,9 +414,10 @@ bool DatabaseWindow::WorkQueryProcess(const std::wstring& query)
     }
     listView->SetItemCount();
     listView->Resize();
-    //prevQuerys.push_back(query); // 사용 쿼리 저장
+    
     return true;
 }
+
 void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     std::wstring query = editUI->GetTextWFromHWND();
@@ -417,12 +427,15 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
         if (!WorkQueryProcess(query)) throw false;
         timer.End();
 
-        double ms = timer.GetDuration();
+        double ms = timer.GetDuration() * 1000;
         wchar_t buffer[16];
-        swprintf_s(buffer, L" (%.2f ms)", ms);
+        swprintf_s(buffer, L" (%.4f ms)", ms);
 
         ShowResultMsg(query + buffer, false);
         currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
+        prevQueryListBox->AddQuery(query); // 사용 쿼리 저장
+        prevQueryListBox->SaveCurrQuery(L"");
+
     }
     catch (...)
     {
@@ -432,22 +445,26 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     //timer.GetDuration();
 }
 
-void DatabaseWindow::StartTransaction()
+void DatabaseWindow::SetTransactionMode(const TransactionType& type)
 {
-    bool result = account->StartTransaction();
-    std::wstring resultLog = result == true ? L"Start Transaction;" : account->GetLastErrorW();
-    ShowResultMsg(resultLog);
-}
-void DatabaseWindow::Commit()
-{
-    bool result = account->Commit();
-    std::wstring resultLog = result == true ? L"Commit;" : account->GetLastErrorW();
-    ShowResultMsg(resultLog);
-}
-void DatabaseWindow::Rollback()
-{
-    bool result = account->Rollback();
-    std::wstring resultLog = result == true ? L"Rollback;" : account->GetLastErrorW();
+    bool result;
+    std::wstring resultLog;
+    switch (type)
+    {
+    case TransactionType::Start:
+        result = account->StartTransaction();
+        resultLog = result == true ? L"Start Transaction;" : account->GetLastErrorW();
+        break;
+    case TransactionType::Commit:
+        result = account->Commit();
+        resultLog = result == true ? L"Commit;" : account->GetLastErrorW();
+        break;
+    case TransactionType::Rollback:
+        result = account->Rollback();
+        std::wstring resultLog = result == true ? L"Rollback;" : account->GetLastErrorW();
+        break;
+    }
+
     ShowResultMsg(resultLog);
 }
 
@@ -465,8 +482,6 @@ void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             // 1. 현재 선택된 아이템(테이블) 핸들 가져오기
             HTREEITEM hSelected = TreeView_GetSelection(hTreeView->GetHWND());
             if (hSelected == NULL) break;
-
-          
 
             if (hSelected != NULL)
             {
@@ -543,6 +558,7 @@ void DatabaseWindow::NotifyTableMaking(HWND hwnd, UINT msg, WPARAM wParam, LPARA
     timer.End();
     //timer.GetDuration();
 }
+
 uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     LPNMHDR pnmh = (LPNMHDR)lParam;
@@ -629,6 +645,7 @@ void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError)
     resultLog->SendToHWND(EM_SETSEL, -1, -1); 
     resultLog->SendToHWND(WM_VSCROLL, SB_BOTTOM, 0);
 }
+
 void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (!autoCommitToggle->IsToggled())
@@ -670,6 +687,69 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
             autoCommitToggle->SetToggled(false);
         }
     }
+}
+
+LRESULT CALLBACK DatabaseWindow::RichEditSubProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+    switch (msg)
+    {
+    case WM_KEYDOWN:
+    {
+        bool isCtrl = (GetKeyState(VK_CONTROL) & 0x8000);
+        bool hasQuery = prevQueryListBox->GetCount() != 0;
+        if (isCtrl && hasQuery)
+        {
+            if (prevQueryListBox->GetCurrIndex() == -1)
+            {
+                std::wstring query = editUI->GetTextWFromHWND();
+                prevQueryListBox->SaveCurrQuery(query);
+            }
+
+            if (wParam == VK_UP) 
+            {
+                prevQueryListBox->TravelIndex(1); 
+                editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetTextFromIndex().c_str());
+                return 0; // RichEdit의 기본 동작(커서 이동) 무시
+            }
+            else if (wParam == VK_DOWN)
+            {
+                prevQueryListBox->TravelIndex(-1);
+                editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetTextFromIndex().c_str());
+                return 0; // RichEdit의 기본 동작(커서 이동) 무시
+            }
+
+           
+
+            //ShowResultMsg(L"Curr Index: " + std::to_wstring(prevQueryListBox->GetCurrIndex()));
+         
+        }
+        break;
+    }
+    /*
+    case WM_PASTE:
+    {
+        if (OpenClipboard(hwnd))
+        { // hwnd는 매개변수로 들어온 RichEdit 핸들
+            HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+            if (hData)
+            {
+                wchar_t* pText = static_cast<wchar_t*>(GlobalLock(hData));
+                if (pText)
+                {
+                    SendMessage(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&g_defaultCF);
+                    SendMessage(hwnd, EM_REPLACESEL, TRUE, (LPARAM)pText);
+                    SendMessage(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&g_defaultCF);
+                    GlobalUnlock(hData);
+                }
+            }
+            CloseClipboard();
+            return 0; // RichEdit의 자체적인 서식 포함 붙여넣기 방지
+        }
+        break;
+    }
+    */
+    }
+    return DefSubclassProc(hwnd, msg, wParam, lParam);
 }
 
 void DatabaseWindow::RefreshAll()

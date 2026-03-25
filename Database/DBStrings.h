@@ -2,8 +2,12 @@
 #define _DBSTRINGS_H
 
 #include <string>
+
 struct DBQueryExamples
 {
+	std::vector<std::wstring> keywords
+		= { L"SELECT", L"FROM", L"WHERE", L"INSERT", L"UPDATE", L"DELETE", L"JOIN", L"AND", L"OR" };
+
 	// User ±ÇÇÑ
 	std::wstring createUser = L"CREATE USER IF NOT EXISTS defaultUser@localhost IDENTIFIED BY 'defaultPW'";
 	std::wstring resetPW = L"ALTER USER defaultUser@localhost IDENTIFIED BY 'newPW';";
