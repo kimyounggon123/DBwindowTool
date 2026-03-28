@@ -63,6 +63,7 @@ class DatabaseWindow : public WindowEX
 
 	static void RefreshAll();
 	static void ApplySqlHighlight();
+
 public:
 	DatabaseWindow(WindowInformations info, bool isAdmin) :
 		WindowEX(info), isAdmin(isAdmin), icex{}

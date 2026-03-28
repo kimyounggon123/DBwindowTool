@@ -14,7 +14,10 @@ bool DatabaseAccount::Connect(const char* server, const char* user, const char* 
 	if (conn) return false;
 
 	conn = mysql_init(nullptr);
-	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)) return false;
+	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)) 
+	{
+		return false;
+	}
 	mysql_set_character_set(conn, "utf8");
 	DBinfo.LogIn(server, user, password, database);
 	DBinfo.Connect();

@@ -30,6 +30,9 @@ TableUI* listView = nullptr;
 TreeView* hTreeView = nullptr;
 HistoryListBox* prevQueryListBox = nullptr;
 
+
+CHARFORMAT2 g_defaultCF;
+
 bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 {
     account = new DatabaseAccount();
@@ -120,6 +123,25 @@ void DatabaseWindow::InitializeUI()
     std::unique_ptr<TableUI> listViewUI = std::make_unique<TableUI>(L"", Transform2DINT({ Position{10, 10}, Vector2Int{620, 710} }));
     listView = listViewUI.get();
     uiManager.AddUI(std::move(listViewUI));
+
+    ZeroMemory(&g_defaultCF, sizeof(g_defaultCF));
+    g_defaultCF.cbSize = sizeof(g_defaultCF);
+
+    // 설정할 항목들 마스크 (폰트명, 크기, 색상, 굵기, 문자셋)
+    g_defaultCF.dwMask = CFM_BOLD | CFM_FACE | CFM_SIZE | CFM_COLOR | CFM_WEIGHT | CFM_CHARSET;
+
+    // 1. 폰트명
+    wcscpy_s(g_defaultCF.szFaceName, L"맑은 고딕");
+
+    // 2. 크기 (원하는 포인트 단위 * 20)
+    // 예: 11pt를 원하면 11 * 20 = 220
+    // 만약 픽셀(18px) 기준이라면 MulDiv(18, 1440, GetDeviceCaps(GetDC(hRichEdit), LOGPIXELSY)) 사용
+    g_defaultCF.yHeight = 220;
+
+    // 3. 기타 속성
+    g_defaultCF.crTextColor = RGB(0, 0, 0); // 검정
+    g_defaultCF.wWeight = FW_NORMAL;
+    g_defaultCF.bCharSet = DEFAULT_CHARSET;
 }
 
 void DatabaseWindow::Shutdown()
@@ -171,6 +193,21 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
             editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetSelectedText().c_str());
             break;
 
+        case ID_EDIT:
+        {
+            if (HIWORD(wParam) == EN_CHANGE) 
+            {
+                static bool isFormatting = false;
+                if (!isFormatting)
+                {
+                    isFormatting = true;
+                    ApplySqlHighlight();
+                    isFormatting = false;
+                }
+            }
+            break;
+        }
+        
         case ID_MENU_LOAD_QUERY:
             // 파일 열기 다이얼로그 띄우는 함수 호출
             //LoadQueryFromFile();
@@ -273,6 +310,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
     editUI->Create(WS_EX_CLIENTEDGE, MSFTEDIT_CLASS, L"", WS_CHILD | WS_VISIBLE | ES_AUTOVSCROLL | WS_VSCROLL | WS_TABSTOP | ES_MULTILINE | ES_WANTRETURN, hwnd, (HMENU)ID_EDIT, WindowEX::hInstance);
     editUI->SendToHWND(EM_SETEVENTMASK, 0, ENM_CHANGE);
+    SendMessage(editUI->GetHWND(), EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&g_defaultCF);
     SetWindowSubclass(editUI->GetHWND(), RichEditSubProc, 1, (DWORD_PTR)nullptr);
 
     submitButton->Create(0, L"BUTTON", L"Submit", WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | WS_TABSTOP, hwnd, (HMENU)ID_SUBMIT, hInstance);
@@ -364,6 +402,7 @@ void DatabaseWindow::LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     else
     {
         ShowResultMsg(account->GetLastErrorW(), true);
+        account->Close();
     }
     id->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
     pw->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
@@ -725,7 +764,7 @@ LRESULT CALLBACK DatabaseWindow::RichEditSubProc(HWND hwnd, UINT msg, WPARAM wPa
         }
         break;
     }
-    /*
+
     case WM_PASTE:
     {
         if (OpenClipboard(hwnd))
@@ -738,7 +777,7 @@ LRESULT CALLBACK DatabaseWindow::RichEditSubProc(HWND hwnd, UINT msg, WPARAM wPa
                 {
                     SendMessage(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&g_defaultCF);
                     SendMessage(hwnd, EM_REPLACESEL, TRUE, (LPARAM)pText);
-                    SendMessage(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&g_defaultCF);
+                    //SendMessage(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&g_defaultCF);
                     GlobalUnlock(hData);
                 }
             }
@@ -747,9 +786,76 @@ LRESULT CALLBACK DatabaseWindow::RichEditSubProc(HWND hwnd, UINT msg, WPARAM wPa
         }
         break;
     }
-    */
     }
     return DefSubclassProc(hwnd, msg, wParam, lParam);
+}
+
+void DatabaseWindow::ApplySqlHighlight()
+{
+    const HWND& hRichEdit = editUI->GetHWND();
+    SendMessage(hRichEdit, WM_SETREDRAW, FALSE, 0);
+
+    // 현 커서 위치 및 스크롤 위치 저장
+    CHARRANGE crOriginal;
+    POINT scrollPos;
+    SendMessage(hRichEdit, EM_EXGETSEL, 0, (LPARAM)&crOriginal);
+    SendMessage(hRichEdit, EM_GETSCROLLPOS, 0, (LPARAM)&scrollPos);
+
+    // 전체 문자열 획득
+    int len = GetWindowTextLength(hRichEdit);
+    std::wstring text(len + 1, L'\0');
+    GetWindowText(hRichEdit, &text[0], len + 1);
+
+    // 검은색으로 먼저 초기화
+    SendMessage(hRichEdit, EM_SETSEL, 0, -1);
+    SendMessage(hRichEdit, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&g_defaultCF);
+
+    // 각 키워드 탐색 및 색상 적용
+    CHARFORMAT2 cfKey = g_defaultCF;
+    //cfKey.dwMask |= CFM_COLOR | CFM_BOLD;
+    //cfKey.crTextColor = RGB(0, 102, 204); // 진한 파란색
+    //cfKey.dwEffects &= ~CFE_AUTOCOLOR;
+
+
+    // 대문자로 변환된 비교용 문자열 만들기
+    std::wstring upperText = text;
+    std::transform(upperText.begin(), upperText.end(), upperText.begin(), towupper);
+
+
+    for (const auto& group : queryExample.keywordGroups)
+    {
+        cfKey.crTextColor = group.color;
+        if (group.isBold) cfKey.dwEffects |= CFE_BOLD;
+        else cfKey.dwEffects &= ~CFE_BOLD;
+
+        for (const auto& word : group.words)
+        {
+            size_t pos = 0;
+
+            while ((pos = upperText.find(word, pos)) != std::wstring::npos)
+            {
+                bool isStandalone = true;
+                if (pos > 0 && iswalnum(text[pos - 1])) isStandalone = false;
+                if (pos + word.length() < len && iswalnum(text[pos + word.length()])) isStandalone = false;
+
+                if (isStandalone)
+                {
+                    SendMessage(hRichEdit, EM_SETSEL, pos, pos + word.length());
+                    SendMessage(hRichEdit, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cfKey);
+                }
+                pos += word.length();
+            }
+        }
+    }
+   
+
+    // 커서 및 스크롤 위치 복구
+    SendMessage(hRichEdit, EM_EXSETSEL, 0, (LPARAM)&crOriginal);
+    SendMessage(hRichEdit, EM_SETSCROLLPOS, 0, (LPARAM)&scrollPos);
+
+    // 화면 업데이트 재개 및 즉시 갱신
+    SendMessage(hRichEdit, WM_SETREDRAW, TRUE, 0);
+    InvalidateRect(hRichEdit, NULL, TRUE);
 }
 
 void DatabaseWindow::RefreshAll()
