@@ -5,8 +5,12 @@
 #include "mysql.h"
 #include <Windows.h>
 
-// 실제 데이터베이스를 다루는 account 클래스
+extern std::string WStringToUTF8(const std::wstring& wstr);
+extern std::wstring UTF8ToWString(const std::string& utf8Str);
 
+
+
+// 실제 데이터베이스를 다루는 account 클래스
 class DatabaseUser
 {
 	std::string server;
@@ -118,14 +122,10 @@ public:
 	bool IsDirty() const { return isDirty; }
 
 
-	std::string WStringToUTF8(const std::wstring& wstr);
-	std::wstring UTF8ToWString(const std::string& utf8Str);
-
 	std::wstring GetDatabaseName() { return UTF8ToWString(DBinfo.GetDatabase()); }
 
 	bool IsConnected() const { return conn != nullptr; }
 };
-
 
 
 #endif

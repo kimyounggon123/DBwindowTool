@@ -24,7 +24,13 @@ WindowUI* resultLog = nullptr;
 
 Button* submitButton = nullptr;
 Button* refreshButton = nullptr;
+
 Toggle* autoCommitToggle = nullptr;
+Button* commitButton = nullptr;
+Button* rollbackButton = nullptr;
+
+
+
 
 TableUI* listView = nullptr;
 TreeView* hTreeView = nullptr;
@@ -106,7 +112,7 @@ void DatabaseWindow::InitializeUI()
     refreshButton = refresh.get();
     uiManager.AddUI(std::move(refresh));
 
-    std::unique_ptr<Toggle> autoCommitTgl = std::make_unique<Toggle>(L"", Transform2DINT({ Position{1040, 510}, Vector2Int{160, 40} }));
+    std::unique_ptr<Toggle> autoCommitTgl = std::make_unique<Toggle>(L"", Transform2DINT({ Position{940, 510}, Vector2Int{160, 40} }));
     autoCommitToggle = autoCommitTgl.get();
     uiManager.AddUI(std::move(autoCommitTgl));
 
@@ -124,10 +130,13 @@ void DatabaseWindow::InitializeUI()
     listView = listViewUI.get();
     uiManager.AddUI(std::move(listViewUI));
 
+
+
+    //// 폰트 설정
     ZeroMemory(&g_defaultCF, sizeof(g_defaultCF));
     g_defaultCF.cbSize = sizeof(g_defaultCF);
 
-    // 설정할 항목들 마스크 (폰트명, 크기, 색상, 굵기, 문자셋)
+    // 활성화할 항목들 마스크 (폰트명, 크기, 색상, 굵기, 문자셋)
     g_defaultCF.dwMask = CFM_BOLD | CFM_FACE | CFM_SIZE | CFM_COLOR | CFM_WEIGHT | CFM_CHARSET;
 
     // 1. 폰트명
@@ -164,6 +173,40 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
         //int width = LOWORD(lParam);
         listView->Resize();
         break;
+    }
+    case WM_DRAWITEM:
+    {
+        LPDRAWITEMSTRUCT lpDrawItem = (LPDRAWITEMSTRUCT)lParam;
+        if (lpDrawItem->CtlID == ID_AUTOCOMMIT) // 커밋 버튼이라면
+        {
+            HDC hdc = lpDrawItem->hDC;
+            RECT rect = lpDrawItem->rcItem;
+
+            // 배경색 칠하기 (예: 진한 남색 배경)
+            //HBRUSH hBrush = CreateSolidBrush(RGB(75, 0, 130));
+            //FillRect(hdc, &rect, hBrush);
+            //DeleteObject(hBrush);
+
+            // 글자 색 설정
+            COLORREF color = autoCommitToggle->IsToggled() ? RGB(120, 0, 0) : RGB(0, 0, 0);
+
+            SetTextColor(hdc, color); // 흰색 글자
+            SetBkMode(hdc, TRANSPARENT);
+
+            // 버튼 텍스트 가져와서 그리기
+            wchar_t buf[256];
+            GetWindowText(lpDrawItem->hwndItem, buf, 256);
+            DrawText(hdc, buf, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+            // 4. (선택 사항) 눌렸을 때 테두리 표현 등
+            if (lpDrawItem->itemState & ODS_SELECTED) {
+                DrawEdge(hdc, &rect, EDGE_SUNKEN, BF_RECT);
+            }
+            else {
+                DrawEdge(hdc, &rect, EDGE_RAISED, BF_RECT);
+            }
+        }
+        return TRUE;
     }
 
     case WM_COMMAND:
@@ -319,7 +362,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     refreshButton->Create(0, L"BUTTON", L"Refresh", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, hwnd, (HMENU)ID_REFRESH, hInstance);
     refreshButton->SetFont(hFontBold);
 
-    autoCommitToggle->Create(0, L"BUTTON", L"Transaction Mode: OFF", WS_VISIBLE | WS_CHILD | BS_PUSHLIKE | BS_AUTOCHECKBOX, hwnd, (HMENU)ID_AUTOCOMMIT, hInstance);
+    autoCommitToggle->Create(0, L"BUTTON", L"Transaction", WS_VISIBLE | WS_CHILD | BS_PUSHLIKE | BS_AUTOCHECKBOX | BS_OWNERDRAW, hwnd, (HMENU)ID_AUTOCOMMIT, hInstance);
     autoCommitToggle->SetToggled(false);
     autoCommitToggle->SetFont(hFontBold);
 
@@ -355,7 +398,7 @@ bool DatabaseWindow::RefreshTree()
     {
         if (row[0])
         {
-            dbNames.push_back(account->UTF8ToWString(row[0]));
+            dbNames.push_back(UTF8ToWString(row[0]));
         }
     }
 
@@ -363,7 +406,7 @@ bool DatabaseWindow::RefreshTree()
     {
         HTREEITEM hDbItem = hTreeView->AddItem(TVI_ROOT, name);
 
-        std::string query = "SHOW TABLES FROM " + account->WStringToUTF8(name);
+        std::string query = "SHOW TABLES FROM " + WStringToUTF8(name);
 
         if (account->ExecuteQuery(query.c_str()))
         {
@@ -373,7 +416,7 @@ bool DatabaseWindow::RefreshTree()
             {
                 if (tableRow[0]) 
                 {
-                    hTreeView->AddItem(hDbItem, account->UTF8ToWString(tableRow[0]));
+                    hTreeView->AddItem(hDbItem, UTF8ToWString(tableRow[0]));
                 }
             }
         }
@@ -390,11 +433,11 @@ void DatabaseWindow::LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     std::wstring idText = id->GetTextWFromHWND();
     std::wstring pwText = pw->GetTextWFromHWND();
 
-    bool result = account->Connect("localhost", account->WStringToUTF8(idText).c_str(), account->WStringToUTF8(pwText), "None");
+    bool result = account->Connect("localhost", WStringToUTF8(idText).c_str(), WStringToUTF8(pwText), "None");
     if (result == true)
     {
         currID->SendToHWND(WM_SETTEXT, 0, (LPARAM)idText.c_str());
-        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->UTF8ToWString("None").c_str());
+        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)UTF8ToWString("None").c_str());
         ShowResultMsg(L"Log In success", false);
         RefreshTree();
         //WorkQueryProcess(L"SHOW DATABASES;");
@@ -432,7 +475,7 @@ bool DatabaseWindow::WorkQueryProcess(const std::wstring& query)
 
     std::vector<std::wstring> columns;
     for (unsigned int i = 0; i < num_fields; ++i)  // 각 row의 field를 출력
-        columns.push_back(account->UTF8ToWString(fields[i].name));
+        columns.push_back(UTF8ToWString(fields[i].name));
     listView->SetColumns(columns);
 
     MYSQL_ROW row = nullptr;
@@ -444,7 +487,7 @@ bool DatabaseWindow::WorkQueryProcess(const std::wstring& query)
         for (unsigned int i = 0; i < num_fields; ++i)  // 각 row의 field를 출력
         {
             bool isRealNULL = row[i] ? false : true;
-            std::wstring value = isRealNULL ? L"NULL" : account->UTF8ToWString(row[i]);
+            std::wstring value = isRealNULL ? L"NULL" : UTF8ToWString(row[i]);
             
             CellData cell{ fields[i].type, value, isRealNULL };
             oneRow.push_back(cell);
@@ -526,7 +569,7 @@ void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             {
           
                 // 자식 이름
-                wchar_t itemText[256];
+                wchar_t itemText[256] = { 0 };
                 TVITEM tvi = { 0 };
                 tvi.hItem = hSelected;
                 tvi.mask = TVIF_TEXT; 
@@ -537,7 +580,7 @@ void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 {
                     // 부모 이름
                     HTREEITEM hParent = TreeView_GetParent(hTreeView->GetHWND(), hSelected);
-                    wchar_t dbName[256];
+                    wchar_t dbName[256] = { 0 };
                     TVITEM tviParent = { 0 };
                     tviParent.hItem = hParent;
                     tviParent.mask = TVIF_TEXT;
@@ -597,7 +640,6 @@ void DatabaseWindow::NotifyTableMaking(HWND hwnd, UINT msg, WPARAM wParam, LPARA
     timer.End();
     //timer.GetDuration();
 }
-
 uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     LPNMHDR pnmh = (LPNMHDR)lParam;
@@ -687,9 +729,10 @@ void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError)
 
 void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    std::wstring resultLog;
     if (!autoCommitToggle->IsToggled())
     {
-        SetWindowText((HWND)lParam, L"Transaction Mode: ON");
+        resultLog = L"Start Transaction";
         account->StartTransaction(); // 클래스 메서드 호출
         autoCommitToggle->SetToggled(true);
     }
@@ -704,28 +747,27 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
             if (result == IDYES)
             {
-                SetWindowText((HWND)lParam, L"Transaction Mode: OFF");
                 account->Commit();
                 autoCommitToggle->SetToggled(false);
             }
             else if (result == IDNO) 
             {
-                SetWindowText((HWND)lParam, L"Transaction Mode: OFF");
                 account->Rollback();
                 autoCommitToggle->SetToggled(false);
             }
             else 
             {
-                // 취소 시: 버튼을 다시 눌린 상태(ON)로 강제 복구
+                // 취소 시 버튼을 다시 눌린 상태(ON)로 강제 복구
                 autoCommitToggle->SendToHWND(BM_SETCHECK, BST_CHECKED, 0);
             }
         }
         else
         {
-            SetWindowText((HWND)lParam, L"Transaction Mode: OFF");
             autoCommitToggle->SetToggled(false);
         }
     }
+
+    ShowResultMsg(resultLog);
 }
 
 LRESULT CALLBACK DatabaseWindow::RichEditSubProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)

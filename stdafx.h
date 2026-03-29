@@ -40,6 +40,7 @@ bool SAFE_FREE_ARRAY(T*& ptr) {
 	}
 	return false;
 }
+
 /// <summary>
 /// 바이트 단위의 endian changer
 /// 해당 코드는 바이트 단위로 endian을 change해 Big <-> little 형태로 만들도록 지원하는 커스텀 함수임

@@ -23,7 +23,7 @@ void TableUI::AddRow(const std::vector<CellData>& data)
 
     if (!useVirtualTable) // 일반 모드일 경우의 출력과정
     {
-        int index = SendMessageW(winUI, LVM_GETITEMCOUNT, 0, 0); // 현재 몇 개의 행이 있는가?
+        int index = static_cast<int>(SendMessageW(winUI, LVM_GETITEMCOUNT, 0, 0)); // 현재 몇 개의 행이 있는가?
 
         LVITEM item{};
         item.mask = LVIF_TEXT;

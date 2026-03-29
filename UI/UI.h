@@ -282,10 +282,10 @@ public:
 
 	std::wstring GetSelectedText()
 	{
-		int idx = SendMessage(winUI, LB_GETCURSEL, 0, 0);
+		int idx = static_cast<int>(SendMessage(winUI, LB_GETCURSEL, 0, 0));
 		if (idx == LB_ERR) return L"";
 
-		int len = SendMessage(winUI, LB_GETTEXTLEN, idx, 0);
+		int len = static_cast<int>(SendMessage(winUI, LB_GETTEXTLEN, idx, 0));
 		std::wstring buf(len, L'\0');
 		SendMessage(winUI, LB_GETTEXT, idx, (LPARAM)buf.data());
 		return buf;
@@ -310,7 +310,7 @@ public:
 
 
 	int GetCurrIndex() { return currIndex; }
-	int GetCount()  { return historyList.size(); }
+	int GetCount()  { return static_cast<int>(historyList.size()); }
 
 };
 #endif

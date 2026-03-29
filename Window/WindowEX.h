@@ -35,6 +35,7 @@ struct WindowInformations
 
 };
 
+
 class WindowEX
 {
 protected:
@@ -52,6 +53,7 @@ protected:
 
 	static std::wstring GetTimeString();
 	static std::wstring GetTimeStringWin32();
+
 
 public:
 	WindowEX(WindowInformations windowInfo) :

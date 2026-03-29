@@ -1,6 +1,33 @@
 #include "DatabaseAccount.h"
 #include <algorithm>
 
+
+std::string WStringToUTF8(const std::wstring& wstr) {
+	if (wstr.empty()) return std::string();
+
+	//int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+	int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, NULL, 0, NULL, NULL);
+	if (size_needed <= 0) return  std::string();
+
+	std::string utf8_str(size_needed - 1, 0);
+	WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, utf8_str.data(), size_needed, nullptr, nullptr);
+	//WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &utf8_str[0], size_needed, NULL, NULL);
+
+	return utf8_str;
+}
+
+std::wstring UTF8ToWString(const std::string& utf8Str) {
+	if (utf8Str.empty()) return L"";
+
+	int size_needed = MultiByteToWideChar(65001, 0, utf8Str.c_str(), -1, NULL, 0);
+	if (size_needed <= 0) return L"";
+
+	std::wstring wstr(size_needed - 1, 0);
+	MultiByteToWideChar(CP_UTF8, 0, utf8Str.c_str(), -1, &wstr[0], size_needed);
+	return wstr;
+}
+
+
 DatabaseAccount::DatabaseAccount(): conn(nullptr), res(nullptr), row(nullptr), isTransaction(false), isDirty(false)
 {}
 
@@ -49,30 +76,7 @@ void DatabaseAccount::Close()
 	}
 }
 
-std::string DatabaseAccount::WStringToUTF8(const std::wstring& wstr) {
-	if (wstr.empty()) return std::string();
 
-	//int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
-	int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, NULL, 0, NULL, NULL);
-	if (size_needed <= 0) return  std::string();
-
-	std::string utf8_str(size_needed - 1, 0);
-	WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, utf8_str.data(), size_needed, nullptr, nullptr);
-	//WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &utf8_str[0], size_needed, NULL, NULL);
-
-	return utf8_str;
-}
-
-std::wstring DatabaseAccount::UTF8ToWString(const std::string& utf8Str) {
-	if (utf8Str.empty()) return L"";
-
-	int size_needed = MultiByteToWideChar(65001, 0, utf8Str.c_str(), -1, NULL, 0);
-	if (size_needed <= 0) return L"";
-
-	std::wstring wstr(size_needed - 1, 0);
-	MultiByteToWideChar(CP_UTF8, 0, utf8Str.c_str(), -1, &wstr[0], size_needed);
-	return wstr;
-}
 
 bool DatabaseAccount::IsUseQuery(const std::string query)
 {
@@ -109,6 +113,7 @@ bool DatabaseAccount::ExecuteQuery(const std::string& query)
 	
 	return isOK; // 결과가 나오는 쿼리문은 true
 }
+
 bool DatabaseAccount::ExecuteQuery(const std::wstring& query)
 {
 	return ExecuteQuery(WStringToUTF8(query));
@@ -166,3 +171,4 @@ void DatabaseAccount::freeResult()
 	}
 	row = nullptr;
 }
+
