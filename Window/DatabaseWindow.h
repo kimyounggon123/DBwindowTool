@@ -21,8 +21,6 @@ class DatabaseWindow : public WindowEX
 	
 	bool isAdmin;
 
-	void InitializeUI();
-
 	static void SanitizeForListView(std::wstring& str)
 	{
 		str.erase( 

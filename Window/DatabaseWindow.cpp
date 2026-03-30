@@ -18,7 +18,6 @@ WindowUI* currDatabaseTag = nullptr;
 WindowUI* currID = nullptr;
 WindowUI* currDatabase = nullptr;
 
-WindowUI* editTag = nullptr;
 WindowUI* editUI = nullptr;
 WindowUI* resultLog = nullptr;
 
@@ -28,9 +27,6 @@ Button* refreshButton = nullptr;
 Toggle* autoCommitToggle = nullptr;
 Button* commitButton = nullptr;
 Button* rollbackButton = nullptr;
-
-
-
 
 TableUI* listView = nullptr;
 TreeView* hTreeView = nullptr;
@@ -42,29 +38,21 @@ CHARFORMAT2 g_defaultCF;
 bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 {
     account = new DatabaseAccount();
-    InitializeUI();
-
-    WindowEX::InitializeWindow(title, wndProc);
-    return true;
-}
-
-void DatabaseWindow::InitializeUI()
-{
+    
     icex.dwSize = sizeof(icex);
     icex.dwICC = ICC_LISTVIEW_CLASSES;
     InitCommonControlsEx(&icex);
-   
 
     // 현재 로그인한 정보
-    std::unique_ptr<WindowUI> currIDTagptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{640, 10}, Vector2Int{80, 20}}));
+    std::unique_ptr<WindowUI> currIDTagptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{640, 10}, Vector2Int{80, 20} }));
     currIDTag = currIDTagptr.get();
     uiManager.AddUI(std::move(currIDTagptr));
 
-    std::unique_ptr<WindowUI> currDBTagptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{640, 32}, Vector2Int{80, 20}}));
+    std::unique_ptr<WindowUI> currDBTagptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{640, 32}, Vector2Int{80, 20} }));
     currDatabaseTag = currDBTagptr.get();
     uiManager.AddUI(std::move(currDBTagptr));
 
-    std::unique_ptr<WindowUI> currIDptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{720, 10}, Vector2Int{210, 20}}));
+    std::unique_ptr<WindowUI> currIDptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{720, 10}, Vector2Int{210, 20} }));
     currID = currIDptr.get();
     uiManager.AddUI(std::move(currIDptr));
 
@@ -74,11 +62,11 @@ void DatabaseWindow::InitializeUI()
 
 
     // 로그인 영역
-    std::unique_ptr<WindowUI> idInputptr = std::make_unique<WindowUI> (L"", Transform2DINT({ Position{940, 10}, Vector2Int{300, 20} }));
+    std::unique_ptr<WindowUI> idInputptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 10}, Vector2Int{300, 20} }));
     id = idInputptr.get();
     uiManager.AddUI(std::move(idInputptr));
 
-    std::unique_ptr<WindowUI> pwInputptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 32}, Vector2Int{300, 20}}));
+    std::unique_ptr<WindowUI> pwInputptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 32}, Vector2Int{300, 20} }));
     pw = pwInputptr.get();
     uiManager.AddUI(std::move(pwInputptr));
 
@@ -86,40 +74,46 @@ void DatabaseWindow::InitializeUI()
     logInBtn = logInBtnptr.get();
     uiManager.AddUI(std::move(logInBtnptr));
 
-    std::unique_ptr<Button> logOutBtnptr = std::make_unique<Button>(L"", Transform2DINT({ Position{1330, 10}, Vector2Int{70, 44}}));
+    std::unique_ptr<Button> logOutBtnptr = std::make_unique<Button>(L"", Transform2DINT({ Position{1330, 10}, Vector2Int{70, 44} }));
     logOutBtn = logOutBtnptr.get();
     uiManager.AddUI(std::move(logOutBtnptr));
 
 
     // 입력창
-    std::unique_ptr<WindowUI> result = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 70}, Vector2Int{460, 200}}));
+    std::unique_ptr<WindowUI> result = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 416}, Vector2Int{460, 250} }));
     resultLog = result.get();
     uiManager.AddUI(std::move(result));
 
-    std::unique_ptr<WindowUI> editTagPtr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 280}, Vector2Int{75, 20} }));
-    editTag = editTagPtr.get();
-    uiManager.AddUI(std::move(editTagPtr));
-
-    std::unique_ptr<WindowUI> edit = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 300}, Vector2Int{460, 200} }));
+    std::unique_ptr<WindowUI> edit = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 65}, Vector2Int{460, 250} }));
     editUI = edit.get();
     uiManager.AddUI(std::move(edit));
 
-    std::unique_ptr<Button> submit = std::make_unique<Button>(L"", Transform2DINT({ Position{1240, 510}, Vector2Int{160, 40}}));
+    std::unique_ptr<Button> submit = std::make_unique<Button>(L"", Transform2DINT({ Position{1240, 329}, Vector2Int{160, 30} })); //14
     submitButton = submit.get();
     uiManager.AddUI(std::move(submit));
 
-    std::unique_ptr<Button> refresh = std::make_unique<Button>(L"", Transform2DINT({ Position{640, 510}, Vector2Int{100, 30} }));
-    refreshButton = refresh.get();
-    uiManager.AddUI(std::move(refresh));
-
-    std::unique_ptr<Toggle> autoCommitTgl = std::make_unique<Toggle>(L"", Transform2DINT({ Position{940, 510}, Vector2Int{160, 40} }));
+    std::unique_ptr<Toggle> autoCommitTgl = std::make_unique<Toggle>(L"", Transform2DINT({ Position{940, 329}, Vector2Int{80, 30} }));
     autoCommitToggle = autoCommitTgl.get();
     uiManager.AddUI(std::move(autoCommitTgl));
 
+    std::unique_ptr<Button> rollback = std::make_unique<Button>(L"", Transform2DINT({ Position{1030, 329}, Vector2Int{80, 30} }));
+    rollbackButton = rollback.get();
+    uiManager.AddUI(std::move(rollback));
+
+    std::unique_ptr<Button> commit = std::make_unique<Button>(L"", Transform2DINT({ Position{1120, 329}, Vector2Int{80, 30} }));
+    commitButton = commit.get();
+    uiManager.AddUI(std::move(commit));
+
+
     // 트리 뷰
-    std::unique_ptr<TreeView> tableTreeViewUI = std::make_unique<TreeView>(L"", Transform2DINT({ Position{640, 70}, Vector2Int{290, 430} }));
+    std::unique_ptr<TreeView> tableTreeViewUI = std::make_unique<TreeView>(L"", Transform2DINT({ Position{640, 65}, Vector2Int{290, 600} }));
     hTreeView = tableTreeViewUI.get();
     uiManager.AddUI(std::move(tableTreeViewUI));
+
+    std::unique_ptr<Button> refresh = std::make_unique<Button>(L"", Transform2DINT({ Position{640, 674}, Vector2Int{100, 30} }));
+    refreshButton = refresh.get();
+    uiManager.AddUI(std::move(refresh));
+
 
     std::unique_ptr<HistoryListBox> prevLogBox = std::make_unique<HistoryListBox>(L"", Transform2DINT({ Position{940, 280}, Vector2Int{290, 200} }));
     prevQueryListBox = prevLogBox.get();
@@ -151,7 +145,11 @@ void DatabaseWindow::InitializeUI()
     g_defaultCF.crTextColor = RGB(0, 0, 0); // 검정
     g_defaultCF.wWeight = FW_NORMAL;
     g_defaultCF.bCharSet = DEFAULT_CHARSET;
+
+    WindowEX::InitializeWindow(title, wndProc);
+    return true;
 }
+
 
 void DatabaseWindow::Shutdown()
 {
@@ -177,34 +175,82 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
     case WM_DRAWITEM:
     {
         LPDRAWITEMSTRUCT lpDrawItem = (LPDRAWITEMSTRUCT)lParam;
+        HDC hdc = lpDrawItem->hDC;
+        RECT rect = lpDrawItem->rcItem;
+       
+
         if (lpDrawItem->CtlID == ID_AUTOCOMMIT) // 커밋 버튼이라면
         {
-            HDC hdc = lpDrawItem->hDC;
-            RECT rect = lpDrawItem->rcItem;
+            bool isToggled = autoCommitToggle->IsToggled();
+            COLORREF bgdColor = isToggled ? RGB(160, 0, 0) : GetSysColor(COLOR_BTNFACE);
+            COLORREF txtColor = isToggled ? RGB(255, 255, 255) : RGB(0, 0, 0);
 
-            // 배경색 칠하기 (예: 진한 남색 배경)
-            //HBRUSH hBrush = CreateSolidBrush(RGB(75, 0, 130));
-            //FillRect(hdc, &rect, hBrush);
-            //DeleteObject(hBrush);
+            // 배경색 칠하기
+            HBRUSH hBrush = CreateSolidBrush(bgdColor);
+            FillRect(hdc, &rect, hBrush);
+            DeleteObject(hBrush);
+
+            // 눌렸을 때 테두리 표현 등
+            if (lpDrawItem->itemState & ODS_SELECTED)
+            {
+                DrawEdge(hdc, &rect, EDGE_SUNKEN, BF_RECT);
+            }
+            else
+            {
+                DrawEdge(hdc, &rect, EDGE_RAISED, BF_RECT);
+            }
+
+            HFONT hFont = (HFONT)SendMessage(lpDrawItem->hwndItem, WM_GETFONT, 0, 0);
+            if (!hFont) hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
 
             // 글자 색 설정
-            COLORREF color = autoCommitToggle->IsToggled() ? RGB(120, 0, 0) : RGB(0, 0, 0);
-
-            SetTextColor(hdc, color); // 흰색 글자
             SetBkMode(hdc, TRANSPARENT);
+            SetTextColor(hdc, txtColor);
 
-            // 버튼 텍스트 가져와서 그리기
+            // 버튼 텍스트 그리기
             wchar_t buf[256];
             GetWindowText(lpDrawItem->hwndItem, buf, 256);
             DrawText(hdc, buf, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
-            // 4. (선택 사항) 눌렸을 때 테두리 표현 등
-            if (lpDrawItem->itemState & ODS_SELECTED) {
+            int showCmd = isToggled ? SW_SHOW : SW_HIDE;
+            // hBtnCommit, hBtnRollback은 버튼 생성 시 저장해둔 HWND입니다.
+            ShowWindow(commitButton->GetHWND(), showCmd);
+            ShowWindow(rollbackButton->GetHWND(), showCmd);
+        }
+
+        if (lpDrawItem->CtlID == ID_ROLLBACK)
+        {
+
+            // 배경색 칠하기
+            HBRUSH hBrush = CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
+            FillRect(hdc, &rect, hBrush);
+            DeleteObject(hBrush);
+
+
+            // 눌렸을 때 테두리 표현 등
+            if (lpDrawItem->itemState & ODS_SELECTED)
+            {
                 DrawEdge(hdc, &rect, EDGE_SUNKEN, BF_RECT);
             }
-            else {
+            else
+            {
                 DrawEdge(hdc, &rect, EDGE_RAISED, BF_RECT);
             }
+
+
+            HFONT hFont = (HFONT)SendMessage(lpDrawItem->hwndItem, WM_GETFONT, 0, 0);
+            if (!hFont) hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+
+            // 글자 색 설정
+            SetBkMode(hdc, TRANSPARENT);
+            SetTextColor(hdc, RGB(255, 0, 0));
+
+            // 버튼 텍스트 그리기
+            wchar_t buf[256];
+            GetWindowText(lpDrawItem->hwndItem, buf, 256);
+            DrawText(hdc, buf, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         }
         return TRUE;
     }
@@ -224,9 +270,6 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
             SendQuery(hwnd, msg, wParam, lParam);
             break;
         
-        case ID_AUTOCOMMIT:
-            SetTransactionMode(hwnd, msg, wParam, lParam);
-            break;
 
         case ID_REFRESH:
             RefreshAll();
@@ -234,6 +277,24 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
         case ID_PREV_QUERYLIST:
             editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetSelectedText().c_str());
+            break;
+
+        case ID_AUTOCOMMIT:
+            SetTransactionMode(hwnd, msg, wParam, lParam);
+            InvalidateRect((HWND)lParam, NULL, FALSE);
+            UpdateWindow((HWND)lParam);
+            break;
+
+        case ID_COMMIT:
+            SetTransactionMode(TransactionType::Commit);
+            InvalidateRect(hwnd, NULL, FALSE);
+            UpdateWindow(hwnd);
+            break;
+
+        case ID_ROLLBACK:
+            SetTransactionMode(TransactionType::Rollback);
+            InvalidateRect(hwnd, NULL, FALSE);
+            UpdateWindow(hwnd);
             break;
 
         case ID_EDIT:
@@ -300,7 +361,7 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
 void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    /*
+    
     // 메뉴 생성
     hMenuBar = CreateMenu();
 
@@ -319,7 +380,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
     // 5. 윈도우에 메뉴바 적용
     SetMenu(hwnd, hMenuBar);
-    */
+    
     // id 창
     id->Create(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, hwnd, nullptr, WindowEX::hInstance);
     id->SetFont(hFontNormal);
@@ -348,10 +409,8 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
     // query 입력 창
     LoadLibrary(L"Msftedit.dll"); // Rich Edit 4.1 버전 사용
-    editTag->Create(0, L"STATIC", L"Input Box", WS_CHILD | WS_VISIBLE, hwnd, nullptr, WindowEX::hInstance);
-    editTag->SetFont(hFontBold);
 
-    editUI->Create(WS_EX_CLIENTEDGE, MSFTEDIT_CLASS, L"", WS_CHILD | WS_VISIBLE | ES_AUTOVSCROLL | WS_VSCROLL | WS_TABSTOP | ES_MULTILINE | ES_WANTRETURN, hwnd, (HMENU)ID_EDIT, WindowEX::hInstance);
+    editUI->Create(WS_EX_CLIENTEDGE, MSFTEDIT_CLASS, L"", WS_CHILD | WS_VISIBLE | ES_AUTOVSCROLL | WS_VSCROLL | ES_MULTILINE | ES_WANTRETURN, hwnd, (HMENU)ID_EDIT, WindowEX::hInstance);
     editUI->SendToHWND(EM_SETEVENTMASK, 0, ENM_CHANGE);
     SendMessage(editUI->GetHWND(), EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&g_defaultCF);
     SetWindowSubclass(editUI->GetHWND(), RichEditSubProc, 1, (DWORD_PTR)nullptr);
@@ -365,6 +424,12 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     autoCommitToggle->Create(0, L"BUTTON", L"Transaction", WS_VISIBLE | WS_CHILD | BS_PUSHLIKE | BS_AUTOCHECKBOX | BS_OWNERDRAW, hwnd, (HMENU)ID_AUTOCOMMIT, hInstance);
     autoCommitToggle->SetToggled(false);
     autoCommitToggle->SetFont(hFontBold);
+
+    commitButton->Create(0, L"BUTTON", L"Commit", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, hwnd, (HMENU)ID_COMMIT, hInstance);
+    commitButton->SetFont(hFontBold);
+
+    rollbackButton->Create(0, L"BUTTON", L"Rollback", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW, hwnd, (HMENU)ID_ROLLBACK, hInstance);
+    rollbackButton->SetFont(hFontBold);
 
     // 결과 및 에러 출력 창
     resultLog->Create(WS_EX_CLIENTEDGE, MSFTEDIT_CLASS, L"", WS_CHILD | WS_VISIBLE | ES_AUTOVSCROLL | WS_VSCROLL | ES_MULTILINE | ES_READONLY, hwnd, (HMENU)ID_RESULT_LOG, WindowEX::hInstance);
@@ -461,9 +526,9 @@ void DatabaseWindow::LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     currID->SendToHWND(WM_SETTEXT, 0, (LPARAM)L"");
     currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)L"None");
     listView->Clear();
+    hTreeView->DeleteAll();
     ShowResultMsg(L"Log Out", false);
 }
-
 bool DatabaseWindow::WorkQueryProcess(const std::wstring& query)
 {
     if (!account->ExecuteQuery(query)) return false;
@@ -525,29 +590,6 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     }
     editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
     //timer.GetDuration();
-}
-
-void DatabaseWindow::SetTransactionMode(const TransactionType& type)
-{
-    bool result;
-    std::wstring resultLog;
-    switch (type)
-    {
-    case TransactionType::Start:
-        result = account->StartTransaction();
-        resultLog = result == true ? L"Start Transaction;" : account->GetLastErrorW();
-        break;
-    case TransactionType::Commit:
-        result = account->Commit();
-        resultLog = result == true ? L"Commit;" : account->GetLastErrorW();
-        break;
-    case TransactionType::Rollback:
-        result = account->Rollback();
-        std::wstring resultLog = result == true ? L"Rollback;" : account->GetLastErrorW();
-        break;
-    }
-
-    ShowResultMsg(resultLog);
 }
 
 void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -727,8 +769,43 @@ void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError)
     resultLog->SendToHWND(WM_VSCROLL, SB_BOTTOM, 0);
 }
 
+
+void DatabaseWindow::SetTransactionMode(const TransactionType& type)
+{
+    bool result = true;
+    std::wstring resultLog;
+    switch (type)
+    {
+    case TransactionType::Start:
+        result = account->StartTransaction();
+        autoCommitToggle->SetToggled(true);
+        resultLog = result == true ? L"Start Transaction" : account->GetLastErrorW();
+        break;
+
+    case TransactionType::Commit:
+        result = account->Commit();
+        autoCommitToggle->SetToggled(false);
+        resultLog = result == true ? L"Commit" : L"Commit Error " + account->GetLastErrorW();
+        break;
+
+    case TransactionType::Rollback:
+        result = account->Rollback();
+        autoCommitToggle->SetToggled(false);
+        resultLog = result == true ? L"Rollback" : L"Rollback Error " + account->GetLastErrorW();
+        break;
+    }
+
+    ShowResultMsg(resultLog, !result);
+}
+
 void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    if (!account->IsConnected())
+    {
+        ShowResultMsg(L"No connection", true);
+        return;
+    }
+
     std::wstring resultLog;
     if (!autoCommitToggle->IsToggled())
     {
@@ -738,6 +815,7 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
     }
     else
     {
+        resultLog = L"Stop Transaction";
         if (account->IsDirty())
         {
             int result = MessageBox(hwnd,
@@ -759,6 +837,7 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
             {
                 // 취소 시 버튼을 다시 눌린 상태(ON)로 강제 복구
                 autoCommitToggle->SendToHWND(BM_SETCHECK, BST_CHECKED, 0);
+                return;
             }
         }
         else
@@ -854,15 +933,10 @@ void DatabaseWindow::ApplySqlHighlight()
 
     // 각 키워드 탐색 및 색상 적용
     CHARFORMAT2 cfKey = g_defaultCF;
-    //cfKey.dwMask |= CFM_COLOR | CFM_BOLD;
-    //cfKey.crTextColor = RGB(0, 102, 204); // 진한 파란색
-    //cfKey.dwEffects &= ~CFE_AUTOCOLOR;
-
 
     // 대문자로 변환된 비교용 문자열 만들기
     std::wstring upperText = text;
     std::transform(upperText.begin(), upperText.end(), upperText.begin(), towupper);
-
 
     for (const auto& group : queryExample.keywordGroups)
     {
@@ -890,7 +964,6 @@ void DatabaseWindow::ApplySqlHighlight()
         }
     }
    
-
     // 커서 및 스크롤 위치 복구
     SendMessage(hRichEdit, EM_EXSETSEL, 0, (LPARAM)&crOriginal);
     SendMessage(hRichEdit, EM_SETSCROLLPOS, 0, (LPARAM)&scrollPos);
