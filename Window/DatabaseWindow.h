@@ -36,10 +36,10 @@ class DatabaseWindow : public WindowEX
 	// DBmain
 	static void WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static void LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	static bool WorkQueryProcess(const std::wstring& query);
+	static my_ulonglong WorkQueryProcess(const std::wstring& query);
 	static void SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	static void ShowResultMsg(const std::wstring& str, bool isError = false);
+	static void ShowResultMsg(const std::wstring& str, bool isError = false, my_ulonglong fixedColumns = 0);
 	static void LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static bool RefreshTree();
 	static LRESULT CALLBACK RichEditSubProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);

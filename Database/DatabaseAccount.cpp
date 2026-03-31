@@ -97,12 +97,12 @@ std::string DatabaseAccount::ExtractDatabaseName(const std::string& query)
 }
 
 
-bool DatabaseAccount::ExecuteQuery(const std::string& query)
+my_ulonglong DatabaseAccount::ExecuteQuery(const std::string& query)
 {
-	if (conn == nullptr) return false;
+	if (conn == nullptr) return -1;
 	freeResult(); // 이전 결과 정리
 
-	if (mysql_query(conn, query.c_str()) != 0) return false;
+	if (mysql_query(conn, query.c_str()) != 0) return -1;
 	res = mysql_store_result(conn);
 	bool isOK = mysql_errno(conn) == 0;
 	if (isOK)
@@ -110,11 +110,11 @@ bool DatabaseAccount::ExecuteQuery(const std::string& query)
 		if (IsUseQuery(query)) DBinfo.SetDatabaseName(ExtractDatabaseName(query));
 		if (isTransaction && mysql_affected_rows(conn) > 0)	isDirty = true;
 	}
-	
-	return isOK; // 결과가 나오는 쿼리문은 true
+
+	return  mysql_affected_rows(conn); // 수정된 column 갯수를 return. 에러 발생 시 -1
 }
 
-bool DatabaseAccount::ExecuteQuery(const std::wstring& query)
+my_ulonglong DatabaseAccount::ExecuteQuery(const std::wstring& query)
 {
 	return ExecuteQuery(WStringToUTF8(query));
 }
@@ -122,20 +122,20 @@ bool DatabaseAccount::ExecuteQuery(const std::wstring& query)
 bool DatabaseAccount::StartTransaction()
 {
 	if (isTransaction == true) return false;
-	if (!ExecuteQuery("START TRANSACTION;")) return false;
+	if (ExecuteQuery("START TRANSACTION;") == -1) return false;
 	isTransaction = true;
 	return true;
 }
 bool DatabaseAccount::Commit()
 {
-	if (!ExecuteQuery("COMMIT;")) return false;
+	if (ExecuteQuery("COMMIT;") == -1) return false;
 	if (isTransaction) isTransaction = false;
 	isDirty = false;
 	return true;
 }
 bool DatabaseAccount::Rollback()
 {
-	if (!ExecuteQuery("ROLLBACK;")) return false;
+	if (ExecuteQuery("ROLLBACK;") == -1) return false;
 	if (isTransaction) isTransaction = false;
 	isDirty = false;
 	return true;

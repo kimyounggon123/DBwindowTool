@@ -100,8 +100,8 @@ public:
 	bool ReConnect();
 	void Close();
 
-	bool ExecuteQuery(const std::string& query); // 실제 쿼리문 실행
-	bool ExecuteQuery(const std::wstring& query); // 실제 쿼리문 실행
+	my_ulonglong ExecuteQuery(const std::string& query); // 실제 쿼리문 실행
+	my_ulonglong ExecuteQuery(const std::wstring& query); // 실제 쿼리문 실행
 
 	std::string GetLastError();
 	std::wstring GetLastErrorW();

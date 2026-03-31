@@ -19,14 +19,16 @@ WindowUI* currID = nullptr;
 WindowUI* currDatabase = nullptr;
 
 WindowUI* editUI = nullptr;
-WindowUI* resultLog = nullptr;
-
 Button* submitButton = nullptr;
 Button* refreshButton = nullptr;
 
 Toggle* autoCommitToggle = nullptr;
 Button* commitButton = nullptr;
 Button* rollbackButton = nullptr;
+
+WindowUI* resultLog = nullptr;
+Button* resultClearButton = nullptr;
+
 
 TableUI* listView = nullptr;
 TreeView* hTreeView = nullptr;
@@ -83,6 +85,11 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
     std::unique_ptr<WindowUI> result = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 416}, Vector2Int{460, 250} }));
     resultLog = result.get();
     uiManager.AddUI(std::move(result));
+
+    std::unique_ptr<Button> resultClear = std::make_unique<Button>(L"", Transform2DINT({ Position{1320, 676}, Vector2Int{80, 30} }));
+    resultClearButton = resultClear.get();
+    uiManager.AddUI(std::move(resultClear));
+
 
     std::unique_ptr<WindowUI> edit = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 65}, Vector2Int{460, 250} }));
     editUI = edit.get();
@@ -297,6 +304,10 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
             UpdateWindow(hwnd);
             break;
 
+        case ID_CLEAR_RESULT:
+            resultLog->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
+            break;
+
         case ID_EDIT:
         {
             if (HIWORD(wParam) == EN_CHANGE) 
@@ -338,16 +349,6 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
     }
     case WM_CTLCOLORSTATIC:
     {
-        /*
-        HDC hdcStatic = (HDC)wParam;
-        HWND hStatic = (HWND)lParam;
-
-        if (GetDlgCtrlID(hStatic) == 1005)
-        {
-            SetBkMode(hdcStatic, TRANSPARENT);
-            return (LRESULT)GetStockObject(NULL_BRUSH);
-        }
-        */
         break;
     }
     
@@ -436,6 +437,11 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     resultLog->SetFont(hFontNormal);
     resultLog->SendToHWND(EM_SETBKGNDCOLOR, 0, (LPARAM)RGB(230, 230, 230));
 
+
+    resultClearButton->Create(0, L"BUTTON", L"Clear", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, hwnd, (HMENU)ID_CLEAR_RESULT, hInstance);
+    resultClearButton->SetFont(hFontBold);
+
+
     // table
     listView->Create(WS_EX_CLIENTEDGE, WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | ES_READONLY | LVS_REPORT | LVS_SINGLESEL | LVS_OWNERDATA, hwnd, (HMENU)ID_LIST_VIEW, hInstance);
     hTreeView->Create(0, WC_TREEVIEW, L"Tree View", WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT, hwnd, (HMENU)5000, hInstance);  
@@ -448,7 +454,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 bool DatabaseWindow::RefreshTree()
 {
     hTreeView->DeleteAll(); //  먼저 삭제
-    if (!account->ExecuteQuery(L"SHOW DATABASES"))
+    if (account->ExecuteQuery(L"SHOW DATABASES") == -1)
     {
         ShowResultMsg(account->GetLastErrorW(), true);
         return false;
@@ -473,16 +479,15 @@ bool DatabaseWindow::RefreshTree()
 
         std::string query = "SHOW TABLES FROM " + WStringToUTF8(name);
 
-        if (account->ExecuteQuery(query.c_str()))
+        if (account->ExecuteQuery(query.c_str()) == -1) continue;
+        
+        MYSQL_RES* tableRes = account->GetResult();
+        MYSQL_ROW tableRow;
+        while ((tableRow = account->fetchRowFromOutside(tableRes)))
         {
-            MYSQL_RES* tableRes = account->GetResult();
-            MYSQL_ROW tableRow;
-            while ((tableRow = account->fetchRowFromOutside(tableRes)))
+            if (tableRow[0]) 
             {
-                if (tableRow[0]) 
-                {
-                    hTreeView->AddItem(hDbItem, UTF8ToWString(tableRow[0]));
-                }
+                hTreeView->AddItem(hDbItem, UTF8ToWString(tableRow[0]));
             }
         }
     }
@@ -529,9 +534,10 @@ void DatabaseWindow::LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     hTreeView->DeleteAll();
     ShowResultMsg(L"Log Out", false);
 }
-bool DatabaseWindow::WorkQueryProcess(const std::wstring& query)
+my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
 {
-    if (!account->ExecuteQuery(query)) return false;
+    my_ulonglong queryResult = account->ExecuteQuery(query);
+    if (queryResult == -1) return queryResult;
 
     listView->Clear(); // 성공 시에만 기존 테이블 제거
 
@@ -562,31 +568,33 @@ bool DatabaseWindow::WorkQueryProcess(const std::wstring& query)
     listView->SetItemCount();
     listView->Resize();
     
-    return true;
+    return queryResult;
 }
 
 void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     std::wstring query = editUI->GetTextWFromHWND();
+    my_ulonglong result = 0;
     try
     {
         timer.Start();
-        if (!WorkQueryProcess(query)) throw false;
+        result = WorkQueryProcess(query);
         timer.End();
+
+        if (result == -1) throw false;
 
         double ms = timer.GetDuration() * 1000;
         wchar_t buffer[16];
         swprintf_s(buffer, L" (%.4f ms)", ms);
 
-        ShowResultMsg(query + buffer, false);
+        ShowResultMsg(query + buffer, false, result);
         currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
         prevQueryListBox->AddQuery(query); // 사용 쿼리 저장
         prevQueryListBox->SaveCurrQuery(L"");
-
     }
     catch (...)
     {
-        ShowResultMsg(account->GetLastErrorW(), true);
+        ShowResultMsg(account->GetLastErrorW(), true, result);
     }
     editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
     //timer.GetDuration();
@@ -739,10 +747,11 @@ uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam,
     return CDRF_DODEFAULT;
 }
 
-void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError)
+void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError, my_ulonglong fixedColumns)
 {
     std::wstring time = GetTimeString();
-    std::wstring final = L" " + str + L"\r\n";
+    std::wstring fixed = fixedColumns == -1 || fixedColumns == 0 ? L"" : L" [" + std::to_wstring(fixedColumns) + L" columns]";
+    std::wstring final = L" " + str + fixed + L"\r\n";
 
     int length = GetWindowTextLengthW(resultLog->GetHWND());
     resultLog->SendToHWND(EM_SETSEL, length, length); // 끝으로 이동
@@ -768,7 +777,6 @@ void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError)
     resultLog->SendToHWND(EM_SETSEL, -1, -1); 
     resultLog->SendToHWND(WM_VSCROLL, SB_BOTTOM, 0);
 }
-
 
 void DatabaseWindow::SetTransactionMode(const TransactionType& type)
 {
@@ -821,21 +829,15 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
             int result = MessageBox(hwnd,
                 L"커밋되지 않은 데이터가 있습니다. 저장하시겠습니까?",
                 L"트랜잭션 종료 확인",
-                MB_YESNOCANCEL | MB_ICONQUESTION);
+                MB_YESNO | MB_ICONQUESTION);
 
             if (result == IDYES)
             {
                 account->Commit();
                 autoCommitToggle->SetToggled(false);
             }
-            else if (result == IDNO) 
-            {
-                account->Rollback();
-                autoCommitToggle->SetToggled(false);
-            }
             else 
             {
-                // 취소 시 버튼을 다시 눌린 상태(ON)로 강제 복구
                 autoCommitToggle->SendToHWND(BM_SETCHECK, BST_CHECKED, 0);
                 return;
             }
@@ -922,10 +924,17 @@ void DatabaseWindow::ApplySqlHighlight()
     SendMessage(hRichEdit, EM_EXGETSEL, 0, (LPARAM)&crOriginal);
     SendMessage(hRichEdit, EM_GETSCROLLPOS, 0, (LPARAM)&scrollPos);
 
-    // 전체 문자열 획득
-    int len = GetWindowTextLength(hRichEdit);
-    std::wstring text(len + 1, L'\0');
-    GetWindowText(hRichEdit, &text[0], len + 1);
+
+    // RichEdit에서 텍스트 가져오기 (CRLF를 LF로 변환하여 가져옴, 색 밀림 방지용)
+    GETTEXTEX gt = { 0 };
+    gt.cb = (GetWindowTextLength(hRichEdit) + 1) * sizeof(wchar_t);
+    gt.flags = GT_DEFAULT;
+    gt.codepage = 1200;    // Unicode (UTF-16)
+
+    std::wstring text;
+    text.resize(GetWindowTextLength(hRichEdit));
+    SendMessage(hRichEdit, EM_GETTEXTEX, (LPARAM)&gt, (LPARAM)&text[0]);
+    size_t len = text.length();
 
     // 검은색으로 먼저 초기화
     SendMessage(hRichEdit, EM_SETSEL, 0, -1);
