@@ -22,6 +22,10 @@
 #define ID_COMMIT 1006
 #define ID_ROLLBACK 1007
 #define ID_CLEAR_RESULT 1008
+
+#define ID_USED_TIME 1009
+#define ID_NUMOF_COLUMNS 1010
+
 // sub menu
 #define ID_MENU_LOAD_QUERY 3000
 #define ID_MENU_SAVE_QUERY 3001

@@ -28,6 +28,8 @@ Button* rollbackButton = nullptr;
 
 WindowUI* resultLog = nullptr;
 Button* resultClearButton = nullptr;
+WindowUI* usedTime = nullptr;
+WindowUI* numOfColumns = nullptr;
 
 
 TableUI* listView = nullptr;
@@ -36,6 +38,10 @@ HistoryListBox* prevQueryListBox = nullptr;
 
 
 CHARFORMAT2 g_defaultCF;
+void DatabaseWindow::Shutdown()
+{
+    SAFE_FREE(account);
+}
 
 bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 {
@@ -86,16 +92,25 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
     resultLog = result.get();
     uiManager.AddUI(std::move(result));
 
+    std::unique_ptr<WindowUI> usedTimeptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 396}, Vector2Int{200, 20} }));
+    usedTime = usedTimeptr.get();
+    uiManager.AddUI(std::move(usedTimeptr));
+
+    std::unique_ptr<WindowUI> numOfColumnptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{1200, 396}, Vector2Int{160, 20} }));
+    numOfColumns = numOfColumnptr.get();
+    uiManager.AddUI(std::move(numOfColumnptr));
+
     std::unique_ptr<Button> resultClear = std::make_unique<Button>(L"", Transform2DINT({ Position{1320, 676}, Vector2Int{80, 30} }));
     resultClearButton = resultClear.get();
     uiManager.AddUI(std::move(resultClear));
+
 
 
     std::unique_ptr<WindowUI> edit = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 65}, Vector2Int{460, 250} }));
     editUI = edit.get();
     uiManager.AddUI(std::move(edit));
 
-    std::unique_ptr<Button> submit = std::make_unique<Button>(L"", Transform2DINT({ Position{1240, 329}, Vector2Int{160, 30} })); //14
+    std::unique_ptr<Button> submit = std::make_unique<Button>(L"", Transform2DINT({ Position{1240, 329}, Vector2Int{160, 30} })); 
     submitButton = submit.get();
     uiManager.AddUI(std::move(submit));
 
@@ -122,9 +137,11 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
     uiManager.AddUI(std::move(refresh));
 
 
-    std::unique_ptr<HistoryListBox> prevLogBox = std::make_unique<HistoryListBox>(L"", Transform2DINT({ Position{940, 280}, Vector2Int{290, 200} }));
+      
+    std::unique_ptr<HistoryListBox> prevLogBox = std::make_unique<HistoryListBox>(L"", Transform2DINT({ Position{0, 0}, Vector2Int{0, 0} }));
     prevQueryListBox = prevLogBox.get();
     uiManager.AddUI(std::move(prevLogBox));
+    
 
     // 테이블
     std::unique_ptr<TableUI> listViewUI = std::make_unique<TableUI>(L"", Transform2DINT({ Position{10, 10}, Vector2Int{620, 710} }));
@@ -157,12 +174,6 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
     return true;
 }
 
-
-void DatabaseWindow::Shutdown()
-{
-    SAFE_FREE(account);
-}
-
 LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     UImanager& ui = UImanager::GetInstance();
@@ -185,80 +196,8 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
         HDC hdc = lpDrawItem->hDC;
         RECT rect = lpDrawItem->rcItem;
        
-
-        if (lpDrawItem->CtlID == ID_AUTOCOMMIT) // 커밋 버튼이라면
-        {
-            bool isToggled = autoCommitToggle->IsToggled();
-            COLORREF bgdColor = isToggled ? RGB(160, 0, 0) : GetSysColor(COLOR_BTNFACE);
-            COLORREF txtColor = isToggled ? RGB(255, 255, 255) : RGB(0, 0, 0);
-
-            // 배경색 칠하기
-            HBRUSH hBrush = CreateSolidBrush(bgdColor);
-            FillRect(hdc, &rect, hBrush);
-            DeleteObject(hBrush);
-
-            // 눌렸을 때 테두리 표현 등
-            if (lpDrawItem->itemState & ODS_SELECTED)
-            {
-                DrawEdge(hdc, &rect, EDGE_SUNKEN, BF_RECT);
-            }
-            else
-            {
-                DrawEdge(hdc, &rect, EDGE_RAISED, BF_RECT);
-            }
-
-            HFONT hFont = (HFONT)SendMessage(lpDrawItem->hwndItem, WM_GETFONT, 0, 0);
-            if (!hFont) hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-            HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-
-            // 글자 색 설정
-            SetBkMode(hdc, TRANSPARENT);
-            SetTextColor(hdc, txtColor);
-
-            // 버튼 텍스트 그리기
-            wchar_t buf[256];
-            GetWindowText(lpDrawItem->hwndItem, buf, 256);
-            DrawText(hdc, buf, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
-            int showCmd = isToggled ? SW_SHOW : SW_HIDE;
-            // hBtnCommit, hBtnRollback은 버튼 생성 시 저장해둔 HWND입니다.
-            ShowWindow(commitButton->GetHWND(), showCmd);
-            ShowWindow(rollbackButton->GetHWND(), showCmd);
-        }
-
-        if (lpDrawItem->CtlID == ID_ROLLBACK)
-        {
-
-            // 배경색 칠하기
-            HBRUSH hBrush = CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
-            FillRect(hdc, &rect, hBrush);
-            DeleteObject(hBrush);
-
-
-            // 눌렸을 때 테두리 표현 등
-            if (lpDrawItem->itemState & ODS_SELECTED)
-            {
-                DrawEdge(hdc, &rect, EDGE_SUNKEN, BF_RECT);
-            }
-            else
-            {
-                DrawEdge(hdc, &rect, EDGE_RAISED, BF_RECT);
-            }
-
-
-            HFONT hFont = (HFONT)SendMessage(lpDrawItem->hwndItem, WM_GETFONT, 0, 0);
-            if (!hFont) hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-            HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-
-            // 글자 색 설정
-            SetBkMode(hdc, TRANSPARENT);
-            SetTextColor(hdc, RGB(255, 0, 0));
-
-            // 버튼 텍스트 그리기
-            wchar_t buf[256];
-            GetWindowText(lpDrawItem->hwndItem, buf, 256);
-            DrawText(hdc, buf, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-        }
+        DrawAutoTransaction(lpDrawItem, hdc, rect);
+        
         return TRUE;
     }
 
@@ -347,8 +286,26 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
         return NotifyTableColoring(hwnd, msg, wParam, lParam);
         break;
     }
+
     case WM_CTLCOLORSTATIC:
     {
+        HDC hdcStatic = (HDC)wParam;
+        HWND hwndStatic = (HWND)lParam;
+
+        
+        if (GetDlgCtrlID(hwndStatic) == ID_USED_TIME || GetDlgCtrlID(hwndStatic) == ID_NUMOF_COLUMNS)
+        {
+            // 글자 뒤의 배경색을 흰색으로 설정
+            SetBkColor(hdcStatic, RGB(255, 255, 255));
+
+            // 글자 자체의 색상을 설정 (필요한 경우)
+            // SetTextColor(hdcStatic, RGB(0, 0, 0));
+
+            // 컨트롤의 나머지 영역을 채울 흰색 브러시 반환
+            return (INT_PTR)GetStockObject(WHITE_BRUSH);
+        }
+        //return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE); // 나머지는 기본색 유지
+        
         break;
     }
     
@@ -437,10 +394,14 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     resultLog->SetFont(hFontNormal);
     resultLog->SendToHWND(EM_SETBKGNDCOLOR, 0, (LPARAM)RGB(230, 230, 230));
 
+   
+    usedTime->Create(0, L"STATIC", L"Time spent (ms): 0.0000", WS_CHILD | WS_VISIBLE, hwnd, (HMENU)ID_USED_TIME, WindowEX::hInstance);
+    usedTime->SetFont(hFontBold);
+    numOfColumns->Create(0, L"STATIC", L"Rows: 0", WS_CHILD | WS_VISIBLE, hwnd, (HMENU)ID_NUMOF_COLUMNS, WindowEX::hInstance);
+    numOfColumns->SetFont(hFontBold);
 
     resultClearButton->Create(0, L"BUTTON", L"Clear", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, hwnd, (HMENU)ID_CLEAR_RESULT, hInstance);
     resultClearButton->SetFont(hFontBold);
-
 
     // table
     listView->Create(WS_EX_CLIENTEDGE, WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | ES_READONLY | LVS_REPORT | LVS_SINGLESEL | LVS_OWNERDATA, hwnd, (HMENU)ID_LIST_VIEW, hInstance);
@@ -451,71 +412,33 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 }
 
 
-bool DatabaseWindow::RefreshTree()
-{
-    hTreeView->DeleteAll(); //  먼저 삭제
-    if (account->ExecuteQuery(L"SHOW DATABASES") == -1)
-    {
-        ShowResultMsg(account->GetLastErrorW(), true);
-        return false;
-    }
-    MYSQL_RES* dbRes = account->GetResult();
-    MYSQL_ROW row;
-
-
-    // 우선 DB 이름 다 가져오기
-    std::vector<std::wstring> dbNames;
-    while ((row = account->fetchRowFromOutside(dbRes))) 
-    {
-        if (row[0])
-        {
-            dbNames.push_back(UTF8ToWString(row[0]));
-        }
-    }
-
-    for (const auto& name : dbNames) 
-    {
-        HTREEITEM hDbItem = hTreeView->AddItem(TVI_ROOT, name);
-
-        std::string query = "SHOW TABLES FROM " + WStringToUTF8(name);
-
-        if (account->ExecuteQuery(query.c_str()) == -1) continue;
-        
-        MYSQL_RES* tableRes = account->GetResult();
-        MYSQL_ROW tableRow;
-        while ((tableRow = account->fetchRowFromOutside(tableRes)))
-        {
-            if (tableRow[0]) 
-            {
-                hTreeView->AddItem(hDbItem, UTF8ToWString(tableRow[0]));
-            }
-        }
-    }
-
-    // 화면 갱신 후 다시 그리기. 깜박임 방지
-    hTreeView->SendToHWND(WM_SETREDRAW, TRUE, 0); //SendMessage(hTreeView->GetHWND(), WM_SETREDRAW, TRUE, 0);
-    InvalidateRect(hTreeView->GetHWND(), NULL, TRUE);
-    return true;
-}
-
+//////////////////////////////////////////////////////////// account ////////////////////////////////////////////////////////////
 void DatabaseWindow::LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    std::wstring idText = id->GetTextWFromHWND();
-    std::wstring pwText = pw->GetTextWFromHWND();
-
-    bool result = account->Connect("localhost", WStringToUTF8(idText).c_str(), WStringToUTF8(pwText), "None");
-    if (result == true)
+    try
     {
+        if (account->IsConnected()) throw L"Already Logged-in.";
+
+        std::wstring idText = id->GetTextWFromHWND();
+        std::wstring pwText = pw->GetTextWFromHWND();
+
+        bool result = account->Connect("localhost", WStringToUTF8(idText).c_str(), WStringToUTF8(pwText), "None");
+        if (!result)
+        {
+            const std::wstring errMsg = account->GetLastErrorW();
+            account->Close();
+            throw errMsg;
+        }
+
         currID->SendToHWND(WM_SETTEXT, 0, (LPARAM)idText.c_str());
         currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)UTF8ToWString("None").c_str());
         ShowResultMsg(L"Log In success", false);
         RefreshTree();
-        //WorkQueryProcess(L"SHOW DATABASES;");
+        
     }
-    else
+    catch (const std::wstring& msg)
     {
-        ShowResultMsg(account->GetLastErrorW(), true);
-        account->Close();
+        ShowResultMsg(msg, true);
     }
     id->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
     pw->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
@@ -534,6 +457,9 @@ void DatabaseWindow::LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     hTreeView->DeleteAll();
     ShowResultMsg(L"Log Out", false);
 }
+
+
+//////////////////////////////////////////////////////////// query process ////////////////////////////////////////////////////////////
 my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
 {
     my_ulonglong queryResult = account->ExecuteQuery(query);
@@ -570,7 +496,6 @@ my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
     
     return queryResult;
 }
-
 void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     std::wstring query = editUI->GetTextWFromHWND();
@@ -583,23 +508,71 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 
         if (result == -1) throw false;
 
-        double ms = timer.GetDuration() * 1000;
-        wchar_t buffer[16];
+        double ms = timer.GetDuration() * 1000; // ms를 구함
+        wchar_t buffer[16] = {0};
         swprintf_s(buffer, L" (%.4f ms)", ms);
 
         ShowResultMsg(query + buffer, false, result);
+        UpdateUsedTimeAndColumns(ms, result);
         currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
         prevQueryListBox->AddQuery(query); // 사용 쿼리 저장
         prevQueryListBox->SaveCurrQuery(L"");
+        editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
     }
     catch (...)
     {
         ShowResultMsg(account->GetLastErrorW(), true, result);
     }
-    editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
-    //timer.GetDuration();
+   
 }
 
+//////////////////////////////////////////////////////////// tree ////////////////////////////////////////////////////////////
+bool DatabaseWindow::RefreshTree()
+{
+    hTreeView->DeleteAll(); //  먼저 삭제
+    if (account->ExecuteQuery(L"SHOW DATABASES") == -1)
+    {
+        ShowResultMsg(account->GetLastErrorW(), true);
+        return false;
+    }
+    MYSQL_RES* dbRes = account->GetResult();
+    MYSQL_ROW row;
+
+
+    // 우선 DB 이름 다 가져오기
+    std::vector<std::wstring> dbNames;
+    while ((row = account->fetchRowFromOutside(dbRes)))
+    {
+        if (row[0])
+        {
+            dbNames.push_back(UTF8ToWString(row[0]));
+        }
+    }
+
+    for (const auto& name : dbNames)
+    {
+        HTREEITEM hDbItem = hTreeView->AddItem(TVI_ROOT, name);
+
+        std::string query = "SHOW TABLES FROM " + WStringToUTF8(name);
+
+        if (account->ExecuteQuery(query.c_str()) == -1) continue;
+
+        MYSQL_RES* tableRes = account->GetResult();
+        MYSQL_ROW tableRow;
+        while ((tableRow = account->fetchRowFromOutside(tableRes)))
+        {
+            if (tableRow[0])
+            {
+                hTreeView->AddItem(hDbItem, UTF8ToWString(tableRow[0]));
+            }
+        }
+    }
+
+    // 화면 갱신 후 다시 그리기. 깜박임 방지
+    hTreeView->SendToHWND(WM_SETREDRAW, TRUE, 0); //SendMessage(hTreeView->GetHWND(), WM_SETREDRAW, TRUE, 0);
+    InvalidateRect(hTreeView->GetHWND(), NULL, TRUE);
+    return true;
+}
 void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     
@@ -641,11 +614,11 @@ void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     if (hParent != NULL)
                     {
                         std::wstring db = dbName;
-                        if (WorkQueryProcess(L"USE " + db + L";")) currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
-                        else ShowResultMsg(account->GetLastErrorW(), true);
+                        if (WorkQueryProcess(L"USE " + db + L";") == -1) ShowResultMsg(account->GetLastErrorW(), true);
+                        else currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
 
                         std::wstring tableName = itemText;
-                        if (!WorkQueryProcess(L"SELECT * FROM " + tableName + L";")) ShowResultMsg(account->GetLastErrorW(), true);
+                        if (WorkQueryProcess(L"SELECT * FROM " + tableName + L";") == -1) ShowResultMsg(account->GetLastErrorW(), true);
                         
                     }
                 }
@@ -747,37 +720,7 @@ uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam,
     return CDRF_DODEFAULT;
 }
 
-void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError, my_ulonglong fixedColumns)
-{
-    std::wstring time = GetTimeString();
-    std::wstring fixed = fixedColumns == -1 || fixedColumns == 0 ? L"" : L" [" + std::to_wstring(fixedColumns) + L" columns]";
-    std::wstring final = L" " + str + fixed + L"\r\n";
-
-    int length = GetWindowTextLengthW(resultLog->GetHWND());
-    resultLog->SendToHWND(EM_SETSEL, length, length); // 끝으로 이동
-
-    // 2. 서식 설정 (CHARFORMAT2)
-    CHARFORMAT2 cf;
-    ZeroMemory(&cf, sizeof(cf));
-    cf.cbSize = sizeof(cf);
-    cf.dwMask = CFM_COLOR | CFM_BOLD | CFM_FACE;
-    cf.dwEffects = CFE_BOLD;         // 볼드체 효과 ON
-    cf.crTextColor = RGB(120, 120, 120); 
-
-    // 시간 넣기
-    resultLog->SendToHWND(EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf); // 해당 줄의 텍스트 색 교체
-    resultLog->SendToHWND(EM_REPLACESEL, FALSE, (LPARAM)time.c_str()); // 텍스트 넣기
-
-    // 볼드 해제 및 실 내용 넣기
-    cf.dwEffects = 0;                // 볼드체 효과 OFF
-    cf.crTextColor = isError ? RGB(255, 0, 0) : RGB(0, 0, 0);        // 성공/실패 색상 적용
-    resultLog->SendToHWND(EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf); // 해당 줄의 텍스트 색 교체
-    resultLog->SendToHWND(EM_REPLACESEL, FALSE, (LPARAM)final.c_str()); // 텍스트 넣기
-
-    resultLog->SendToHWND(EM_SETSEL, -1, -1); 
-    resultLog->SendToHWND(WM_VSCROLL, SB_BOTTOM, 0);
-}
-
+//////////////////////////////////////////////////////////// transaction ////////////////////////////////////////////////////////////
 void DatabaseWindow::SetTransactionMode(const TransactionType& type)
 {
     bool result = true;
@@ -805,7 +748,6 @@ void DatabaseWindow::SetTransactionMode(const TransactionType& type)
 
     ShowResultMsg(resultLog, !result);
 }
-
 void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (!account->IsConnected())
@@ -851,6 +793,9 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
     ShowResultMsg(resultLog);
 }
 
+
+
+//////////////////////////////////////////////////////////// Drawing & Update ////////////////////////////////////////////////////////////
 LRESULT CALLBACK DatabaseWindow::RichEditSubProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 {
     switch (msg)
@@ -912,7 +857,82 @@ LRESULT CALLBACK DatabaseWindow::RichEditSubProc(HWND hwnd, UINT msg, WPARAM wPa
     }
     return DefSubclassProc(hwnd, msg, wParam, lParam);
 }
+void DatabaseWindow::DrawAutoTransaction(LPDRAWITEMSTRUCT lpDrawItem, HDC hdc, RECT rect)
+{
+    if (lpDrawItem->CtlID == ID_AUTOCOMMIT) // 커밋 버튼이라면
+    {
+        bool isToggled = autoCommitToggle->IsToggled();
+        COLORREF bgdColor = isToggled ? RGB(160, 0, 0) : GetSysColor(COLOR_BTNFACE);
+        COLORREF txtColor = isToggled ? RGB(255, 255, 255) : RGB(0, 0, 0);
 
+        // 배경색 칠하기
+        HBRUSH hBrush = CreateSolidBrush(bgdColor);
+        FillRect(hdc, &rect, hBrush);
+        DeleteObject(hBrush);
+
+        // 눌렸을 때 테두리 표현 등
+        if (lpDrawItem->itemState & ODS_SELECTED)
+        {
+            DrawEdge(hdc, &rect, EDGE_SUNKEN, BF_RECT);
+        }
+        else
+        {
+            DrawEdge(hdc, &rect, EDGE_RAISED, BF_RECT);
+        }
+
+        HFONT hFont = (HFONT)SendMessage(lpDrawItem->hwndItem, WM_GETFONT, 0, 0);
+        if (!hFont) hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+        HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+
+        // 글자 색 설정
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextColor(hdc, txtColor);
+
+        // 버튼 텍스트 그리기
+        wchar_t buf[256];
+        GetWindowText(lpDrawItem->hwndItem, buf, 256);
+        DrawText(hdc, buf, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+        int showCmd = isToggled ? SW_SHOW : SW_HIDE;
+        // hBtnCommit, hBtnRollback은 버튼 생성 시 저장해둔 HWND입니다.
+        ShowWindow(commitButton->GetHWND(), showCmd);
+        ShowWindow(rollbackButton->GetHWND(), showCmd);
+    }
+
+    if (lpDrawItem->CtlID == ID_ROLLBACK)
+    {
+
+        // 배경색 칠하기
+        HBRUSH hBrush = CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
+        FillRect(hdc, &rect, hBrush);
+        DeleteObject(hBrush);
+
+
+        // 눌렸을 때 테두리 표현 등
+        if (lpDrawItem->itemState & ODS_SELECTED)
+        {
+            DrawEdge(hdc, &rect, EDGE_SUNKEN, BF_RECT);
+        }
+        else
+        {
+            DrawEdge(hdc, &rect, EDGE_RAISED, BF_RECT);
+        }
+
+
+        HFONT hFont = (HFONT)SendMessage(lpDrawItem->hwndItem, WM_GETFONT, 0, 0);
+        if (!hFont) hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+        HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+
+        // 글자 색 설정
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextColor(hdc, RGB(255, 0, 0));
+
+        // 버튼 텍스트 그리기
+        wchar_t buf[256];
+        GetWindowText(lpDrawItem->hwndItem, buf, 256);
+        DrawText(hdc, buf, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    }
+}
 void DatabaseWindow::ApplySqlHighlight()
 {
     const HWND& hRichEdit = editUI->GetHWND();
@@ -980,6 +1000,47 @@ void DatabaseWindow::ApplySqlHighlight()
     // 화면 업데이트 재개 및 즉시 갱신
     SendMessage(hRichEdit, WM_SETREDRAW, TRUE, 0);
     InvalidateRect(hRichEdit, NULL, TRUE);
+}
+void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError, my_ulonglong fixedColumns)
+{
+    std::wstring time = GetTimeString();
+    //std::wstring fixed = fixedColumns == -1 || fixedColumns == 0 ? L"" : L" [" + std::to_wstring(fixedColumns) + L" columns]";
+    std::wstring final = L" " + str + L"\r\n";
+
+    int length = GetWindowTextLengthW(resultLog->GetHWND());
+    resultLog->SendToHWND(EM_SETSEL, length, length); // 끝으로 이동
+
+    // 2. 서식 설정 (CHARFORMAT2)
+    CHARFORMAT2 cf;
+    ZeroMemory(&cf, sizeof(cf));
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_COLOR | CFM_BOLD | CFM_FACE;
+    cf.dwEffects = CFE_BOLD;         // 볼드체 효과 ON
+    cf.crTextColor = RGB(120, 120, 120);
+
+    // 시간 넣기
+    resultLog->SendToHWND(EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf); // 해당 줄의 텍스트 색 교체
+    resultLog->SendToHWND(EM_REPLACESEL, FALSE, (LPARAM)time.c_str()); // 텍스트 넣기
+
+    // 볼드 해제 및 실 내용 넣기
+    cf.dwEffects = 0;                // 볼드체 효과 OFF
+    cf.crTextColor = isError ? RGB(255, 0, 0) : RGB(0, 0, 0);        // 성공/실패 색상 적용
+    resultLog->SendToHWND(EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf); // 해당 줄의 텍스트 색 교체
+    resultLog->SendToHWND(EM_REPLACESEL, FALSE, (LPARAM)final.c_str()); // 텍스트 넣기
+
+    resultLog->SendToHWND(EM_SETSEL, -1, -1);
+    resultLog->SendToHWND(WM_VSCROLL, SB_BOTTOM, 0);
+}
+
+void DatabaseWindow::UpdateUsedTimeAndColumns(double time, my_ulonglong columns)
+{
+    wchar_t buffer[16] = { 0 };
+    swprintf_s(buffer, L"%.4f", time);
+    std::wstring timeResult = L"Time spent (ms): "; timeResult += buffer;
+    std::wstring columnResult = L"Rows: " + std::to_wstring(columns);
+
+    usedTime->SendToHWND(WM_SETTEXT, 0, (LPARAM)timeResult.c_str());
+    numOfColumns->SendToHWND(WM_SETTEXT, 0, (LPARAM)columnResult.c_str());
 }
 
 void DatabaseWindow::RefreshAll()

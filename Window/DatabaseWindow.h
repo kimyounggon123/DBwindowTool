@@ -35,12 +35,17 @@ class DatabaseWindow : public WindowEX
 
 	// DBmain
 	static void WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static void LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static void LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	// WM_DRAWITEM
+	static void DrawAutoTransaction(LPDRAWITEMSTRUCT lpDrawItem, HDC hdc, RECT rect);
+
+
 	static my_ulonglong WorkQueryProcess(const std::wstring& query);
 	static void SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	static void ShowResultMsg(const std::wstring& str, bool isError = false, my_ulonglong fixedColumns = 0);
-	static void LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static bool RefreshTree();
 	static LRESULT CALLBACK RichEditSubProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 
@@ -61,6 +66,8 @@ class DatabaseWindow : public WindowEX
 
 	static void RefreshAll();
 	static void ApplySqlHighlight();
+
+	static void UpdateUsedTimeAndColumns(double time, my_ulonglong columns);
 
 public:
 	DatabaseWindow(WindowInformations info, bool isAdmin) :
