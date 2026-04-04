@@ -432,13 +432,13 @@ void DatabaseWindow::LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
         currID->SendToHWND(WM_SETTEXT, 0, (LPARAM)idText.c_str());
         currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)UTF8ToWString("None").c_str());
-        ShowResultMsg(L"Log In success", false);
+        WriteMsg(L"Log In success", false);
         RefreshTree();
         
     }
     catch (const std::wstring& msg)
     {
-        ShowResultMsg(msg, true);
+        WriteMsg(msg, true);
     }
     id->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
     pw->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
@@ -447,7 +447,7 @@ void DatabaseWindow::LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (!account->IsConnected())
     {
-        ShowResultMsg(L"No connection", true);
+        WriteMsg(L"No connection", true);
         return;
     }
     account->Close();
@@ -455,13 +455,14 @@ void DatabaseWindow::LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)L"None");
     listView->Clear();
     hTreeView->DeleteAll();
-    ShowResultMsg(L"Log Out", false);
+    WriteMsg(L"Log Out", false);
 }
 
 
 //////////////////////////////////////////////////////////// query process ////////////////////////////////////////////////////////////
 my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
 {
+    timer.Start();
     my_ulonglong queryResult = account->ExecuteQuery(query);
     if (queryResult == -1) return queryResult;
 
@@ -494,6 +495,10 @@ my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
     listView->SetItemCount();
     listView->Resize();
     
+    timer.End();
+    double ms = timer.GetDuration() * 1000; // ms를 구함
+    UpdateUsedTimeAndColumns(ms, queryResult);
+    WriteQueryResult(query, ms);
     return queryResult;
 }
 void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -502,18 +507,10 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     my_ulonglong result = 0;
     try
     {
-        timer.Start();
         result = WorkQueryProcess(query);
-        timer.End();
 
         if (result == -1) throw false;
 
-        double ms = timer.GetDuration() * 1000; // ms를 구함
-        wchar_t buffer[16] = {0};
-        swprintf_s(buffer, L" (%.4f ms)", ms);
-
-        ShowResultMsg(query + buffer, false, result);
-        UpdateUsedTimeAndColumns(ms, result);
         currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
         prevQueryListBox->AddQuery(query); // 사용 쿼리 저장
         prevQueryListBox->SaveCurrQuery(L"");
@@ -521,7 +518,7 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     }
     catch (...)
     {
-        ShowResultMsg(account->GetLastErrorW(), true, result);
+        WriteMsg(account->GetLastErrorW(), true);
     }
    
 }
@@ -532,7 +529,7 @@ bool DatabaseWindow::RefreshTree()
     hTreeView->DeleteAll(); //  먼저 삭제
     if (account->ExecuteQuery(L"SHOW DATABASES") == -1)
     {
-        ShowResultMsg(account->GetLastErrorW(), true);
+        WriteMsg(account->GetLastErrorW(), true);
         return false;
     }
     MYSQL_RES* dbRes = account->GetResult();
@@ -614,11 +611,16 @@ void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     if (hParent != NULL)
                     {
                         std::wstring db = dbName;
-                        if (WorkQueryProcess(L"USE " + db + L";") == -1) ShowResultMsg(account->GetLastErrorW(), true);
-                        else currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
+    
+                        if (db != currDatabase->GetTextWFromHWND())
+                        {
+                            if (WorkQueryProcess(L"USE " + db + L";") == -1) WriteMsg(account->GetLastErrorW(), true);
+                            else currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
+                        }
+              
 
                         std::wstring tableName = itemText;
-                        if (WorkQueryProcess(L"SELECT * FROM " + tableName + L";") == -1) ShowResultMsg(account->GetLastErrorW(), true);
+                        if (WorkQueryProcess(L"SELECT * FROM " + tableName + L";") == -1) WriteMsg(account->GetLastErrorW(), true);
                         
                     }
                 }
@@ -746,13 +748,13 @@ void DatabaseWindow::SetTransactionMode(const TransactionType& type)
         break;
     }
 
-    ShowResultMsg(resultLog, !result);
+    WriteMsg(resultLog, !result);
 }
 void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (!account->IsConnected())
     {
-        ShowResultMsg(L"No connection", true);
+        WriteMsg(L"No connection", true);
         return;
     }
 
@@ -790,9 +792,8 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
         }
     }
 
-    ShowResultMsg(resultLog);
+    WriteMsg(resultLog);
 }
-
 
 
 //////////////////////////////////////////////////////////// Drawing & Update ////////////////////////////////////////////////////////////
@@ -1001,7 +1002,7 @@ void DatabaseWindow::ApplySqlHighlight()
     SendMessage(hRichEdit, WM_SETREDRAW, TRUE, 0);
     InvalidateRect(hRichEdit, NULL, TRUE);
 }
-void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError, my_ulonglong fixedColumns)
+void DatabaseWindow::WriteMsg(const std::wstring& str, bool isError)
 {
     std::wstring time = GetTimeString();
     //std::wstring fixed = fixedColumns == -1 || fixedColumns == 0 ? L"" : L" [" + std::to_wstring(fixedColumns) + L" columns]";
@@ -1032,10 +1033,18 @@ void DatabaseWindow::ShowResultMsg(const std::wstring& str, bool isError, my_ulo
     resultLog->SendToHWND(WM_VSCROLL, SB_BOTTOM, 0);
 }
 
-void DatabaseWindow::UpdateUsedTimeAndColumns(double time, my_ulonglong columns)
+void DatabaseWindow::WriteQueryResult(const std::wstring& query, double ms)
 {
     wchar_t buffer[16] = { 0 };
-    swprintf_s(buffer, L"%.4f", time);
+    swprintf_s(buffer, L" [%.4f ms]", ms);
+    std::wstring resultLog = query; resultLog += buffer;
+    WriteMsg(resultLog);
+}
+
+void DatabaseWindow::UpdateUsedTimeAndColumns(double ms, my_ulonglong columns)
+{
+    wchar_t buffer[16] = { 0 };
+    swprintf_s(buffer, L"%.4f", ms);
     std::wstring timeResult = L"Time spent (ms): "; timeResult += buffer;
     std::wstring columnResult = L"Rows: " + std::to_wstring(columns);
 

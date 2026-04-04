@@ -45,7 +45,7 @@ class DatabaseWindow : public WindowEX
 	static my_ulonglong WorkQueryProcess(const std::wstring& query);
 	static void SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	static void ShowResultMsg(const std::wstring& str, bool isError = false, my_ulonglong fixedColumns = 0);
+	
 	static bool RefreshTree();
 	static LRESULT CALLBACK RichEditSubProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 
@@ -67,7 +67,10 @@ class DatabaseWindow : public WindowEX
 	static void RefreshAll();
 	static void ApplySqlHighlight();
 
-	static void UpdateUsedTimeAndColumns(double time, my_ulonglong columns);
+
+	static void WriteMsg(const std::wstring& str, bool isError = false);
+	static void WriteQueryResult(const std::wstring& query, double ms = 0.0);
+	static void UpdateUsedTimeAndColumns(double ms, my_ulonglong columns);
 
 public:
 	DatabaseWindow(WindowInformations info, bool isAdmin) :
