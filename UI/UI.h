@@ -127,6 +127,17 @@ public:
 		return mousePos.x >= transform.pos.x && mousePos.x <= transform.pos.x + transform.scale.x
 			&& mousePos.y >= transform.pos.y && mousePos.y <= transform.pos.y + transform.scale.y;
 	}
+
+	void Invalidate(const RECT* area = nullptr, bool erase = false)
+	{
+		// Window 함수 내 WM_PAINT / WM_DRAWITEM 에 신청하는 함수
+		InvalidateRect(winUI, area, erase);
+	}
+	void UpdateImmediately()
+	{
+		// Invalidate와 달리 즉시 UI를 수정하는 함수
+		UpdateWindow(winUI);
+	}
 };
 
 

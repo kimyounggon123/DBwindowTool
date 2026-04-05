@@ -68,8 +68,8 @@ class DatabaseWindow : public WindowEX
 	static void ApplySqlHighlight();
 
 
-	static void WriteMsg(const std::wstring& str, bool isError = false);
-	static void WriteQueryResult(const std::wstring& query, double ms = 0.0);
+	static void WriteMsg(const std::wstring str, bool isError = false);
+	static void WriteQueryResult(const std::wstring query, double ms = 0.0);
 	static void UpdateUsedTimeAndColumns(double ms, my_ulonglong columns);
 
 public:

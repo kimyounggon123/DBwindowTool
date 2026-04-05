@@ -227,20 +227,22 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
         case ID_AUTOCOMMIT:
             SetTransactionMode(hwnd, msg, wParam, lParam);
-            InvalidateRect((HWND)lParam, NULL, FALSE);
-            UpdateWindow((HWND)lParam);
+            autoCommitToggle->Invalidate();
+           
             break;
 
         case ID_COMMIT:
             SetTransactionMode(TransactionType::Commit);
-            InvalidateRect(hwnd, NULL, FALSE);
-            UpdateWindow(hwnd);
+            autoCommitToggle->Invalidate();
+            commitButton->Invalidate();
+            rollbackButton->Invalidate();
             break;
 
         case ID_ROLLBACK:
             SetTransactionMode(TransactionType::Rollback);
-            InvalidateRect(hwnd, NULL, FALSE);
-            UpdateWindow(hwnd);
+            autoCommitToggle->Invalidate();
+            commitButton->Invalidate();
+            rollbackButton->Invalidate();
             break;
 
         case ID_CLEAR_RESULT:
@@ -370,7 +372,7 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
     editUI->Create(WS_EX_CLIENTEDGE, MSFTEDIT_CLASS, L"", WS_CHILD | WS_VISIBLE | ES_AUTOVSCROLL | WS_VSCROLL | ES_MULTILINE | ES_WANTRETURN, hwnd, (HMENU)ID_EDIT, WindowEX::hInstance);
     editUI->SendToHWND(EM_SETEVENTMASK, 0, ENM_CHANGE);
-    SendMessage(editUI->GetHWND(), EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&g_defaultCF);
+    editUI->SendToHWND(EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&g_defaultCF);
     SetWindowSubclass(editUI->GetHWND(), RichEditSubProc, 1, (DWORD_PTR)nullptr);
 
     submitButton->Create(0, L"BUTTON", L"Submit", WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | WS_TABSTOP, hwnd, (HMENU)ID_SUBMIT, hInstance);
@@ -496,11 +498,12 @@ my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
     listView->Resize();
     
     timer.End();
-    double ms = timer.GetDuration() * 1000; // ms를 구함
+    double ms = timer.GetDuration(); 
     UpdateUsedTimeAndColumns(ms, queryResult);
     WriteQueryResult(query, ms);
     return queryResult;
 }
+
 void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     std::wstring query = editUI->GetTextWFromHWND();
@@ -511,7 +514,7 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 
         if (result == -1) throw false;
 
-        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
+        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str()); // 현재 데이터베이스 이름 출력
         prevQueryListBox->AddQuery(query); // 사용 쿼리 저장
         prevQueryListBox->SaveCurrQuery(L"");
         editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
@@ -567,7 +570,7 @@ bool DatabaseWindow::RefreshTree()
 
     // 화면 갱신 후 다시 그리기. 깜박임 방지
     hTreeView->SendToHWND(WM_SETREDRAW, TRUE, 0); //SendMessage(hTreeView->GetHWND(), WM_SETREDRAW, TRUE, 0);
-    InvalidateRect(hTreeView->GetHWND(), NULL, TRUE);
+    hTreeView->Invalidate();
     return true;
 }
 void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -633,7 +636,6 @@ void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 void DatabaseWindow::NotifyTableMaking(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     LPNMHDR pnmh = (LPNMHDR)lParam;
-    timer.Start();
     try
     {
         if (pnmh->code == LVN_GETDISPINFO) {
@@ -662,7 +664,6 @@ void DatabaseWindow::NotifyTableMaking(HWND hwnd, UINT msg, WPARAM wParam, LPARA
     {
 
     }
-    timer.End();
     //timer.GetDuration();
 }
 uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -1002,7 +1003,7 @@ void DatabaseWindow::ApplySqlHighlight()
     SendMessage(hRichEdit, WM_SETREDRAW, TRUE, 0);
     InvalidateRect(hRichEdit, NULL, TRUE);
 }
-void DatabaseWindow::WriteMsg(const std::wstring& str, bool isError)
+void DatabaseWindow::WriteMsg(const std::wstring str, bool isError)
 {
     std::wstring time = GetTimeString();
     //std::wstring fixed = fixedColumns == -1 || fixedColumns == 0 ? L"" : L" [" + std::to_wstring(fixedColumns) + L" columns]";
@@ -1033,9 +1034,9 @@ void DatabaseWindow::WriteMsg(const std::wstring& str, bool isError)
     resultLog->SendToHWND(WM_VSCROLL, SB_BOTTOM, 0);
 }
 
-void DatabaseWindow::WriteQueryResult(const std::wstring& query, double ms)
+void DatabaseWindow::WriteQueryResult(const std::wstring query, double ms)
 {
-    wchar_t buffer[16] = { 0 };
+    wchar_t buffer[32] = { 0 };
     swprintf_s(buffer, L" [%.4f ms]", ms);
     std::wstring resultLog = query; resultLog += buffer;
     WriteMsg(resultLog);
