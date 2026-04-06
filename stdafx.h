@@ -13,7 +13,7 @@
 #include <cstring>
 
 #define BUFFERSIZE 1024
-#define WINDOW_MODE 1
+#define WINDOW_MODE 0
 #define DEBUG_MODE 1
 
 

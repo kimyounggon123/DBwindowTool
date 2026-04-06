@@ -43,6 +43,154 @@ void DatabaseWindow::Shutdown()
     SAFE_FREE(account);
 }
 
+LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    UImanager& ui = UImanager::GetInstance();
+    switch (msg)
+    {
+    case WM_CREATE:
+        WM_CREATE_FUNC(hwnd, msg, wParam, lParam);
+        break;
+
+
+    case WM_SIZE:
+    {
+        //int width = LOWORD(lParam);
+        listView->Resize();
+        break;
+    }
+    case WM_DRAWITEM:
+    {
+        LPDRAWITEMSTRUCT lpDrawItem = (LPDRAWITEMSTRUCT)lParam;
+        HDC hdc = lpDrawItem->hDC;
+        RECT rect = lpDrawItem->rcItem;
+
+        DrawAutoTransaction(lpDrawItem, hdc, rect);
+
+        return TRUE;
+    }
+
+    case WM_COMMAND:
+    {
+        switch (LOWORD(wParam))
+        {
+        case ID_LOGIN:
+            LogIn(hwnd, msg, wParam, lParam);
+            break;
+        case ID_LOGOUT:
+            LogOut(hwnd, msg, wParam, lParam);
+            break;
+
+        case ID_SUBMIT: // Execute 버튼     
+            SendQuery(hwnd, msg, wParam, lParam);
+            break;
+
+
+        case ID_REFRESH:
+            RefreshAll();
+            break;
+
+        case ID_PREV_QUERYLIST:
+            editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetSelectedText().c_str());
+            break;
+
+        case ID_AUTOCOMMIT:
+            SetTransactionMode(hwnd, msg, wParam, lParam);
+            autoCommitToggle->Invalidate();
+
+            break;
+
+        case ID_COMMIT:
+            SetTransactionMode(TransactionType::Commit);
+            autoCommitToggle->Invalidate();
+            commitButton->Invalidate();
+            rollbackButton->Invalidate();
+            break;
+
+        case ID_ROLLBACK:
+            SetTransactionMode(TransactionType::Rollback);
+            autoCommitToggle->Invalidate();
+            commitButton->Invalidate();
+            rollbackButton->Invalidate();
+            break;
+
+        case ID_CLEAR_RESULT:
+            resultLog->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
+            break;
+
+        case ID_EDIT:
+        {
+            if (HIWORD(wParam) == EN_CHANGE)
+            {
+                static bool isFormatting = false;
+                if (!isFormatting)
+                {
+                    isFormatting = true;
+                    ApplySqlHighlight();
+                    isFormatting = false;
+                }
+            }
+            break;
+        }
+
+        case ID_MENU_LOAD_QUERY:
+            // 파일 열기 다이얼로그 띄우는 함수 호출
+            //LoadQueryFromFile();
+            break;
+
+        case ID_MENU_SAVE_QUERY:
+            // 현재 에디트 박스 텍스트 파일로 저장
+            //SaveQueryToFile();
+            break;
+
+        case ID_MENU_EXIT:
+            DestroyWindow(hwnd);
+            break;
+
+        }
+        break;
+    }
+    case WM_NOTIFY:
+    {
+        NotifyTreeClick(hwnd, msg, wParam, lParam);
+        NotifyTableMaking(hwnd, msg, wParam, lParam);
+        return NotifyTableColoring(hwnd, msg, wParam, lParam);
+        break;
+    }
+
+    case WM_CTLCOLORSTATIC:
+    {
+        HDC hdcStatic = (HDC)wParam;
+        HWND hwndStatic = (HWND)lParam;
+
+
+        if (GetDlgCtrlID(hwndStatic) == ID_USED_TIME || GetDlgCtrlID(hwndStatic) == ID_NUMOF_COLUMNS)
+        {
+            // 글자 뒤의 배경색을 흰색으로 설정
+            SetBkColor(hdcStatic, RGB(255, 255, 255));
+
+            // 글자 자체의 색상을 설정 (필요한 경우)
+            // SetTextColor(hdcStatic, RGB(0, 0, 0));
+
+            // 컨트롤의 나머지 영역을 채울 흰색 브러시 반환
+            return (INT_PTR)GetStockObject(WHITE_BRUSH);
+        }
+        //return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE); // 나머지는 기본색 유지
+
+        break;
+    }
+
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    }
+
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+
+
+//////////////////////////////////////////////////////////// Initialize ////////////////////////////////////////////////////////////
 bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 {
     account = new DatabaseAccount();
@@ -173,152 +321,6 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
     WindowEX::InitializeWindow(title, wndProc);
     return true;
 }
-
-LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    UImanager& ui = UImanager::GetInstance();
-    switch (msg)
-    {
-    case WM_CREATE:
-        WM_CREATE_FUNC(hwnd, msg, wParam, lParam);
-        break;
-    
-
-    case WM_SIZE:
-    {
-        //int width = LOWORD(lParam);
-        listView->Resize();
-        break;
-    }
-    case WM_DRAWITEM:
-    {
-        LPDRAWITEMSTRUCT lpDrawItem = (LPDRAWITEMSTRUCT)lParam;
-        HDC hdc = lpDrawItem->hDC;
-        RECT rect = lpDrawItem->rcItem;
-       
-        DrawAutoTransaction(lpDrawItem, hdc, rect);
-        
-        return TRUE;
-    }
-
-    case WM_COMMAND:
-    {
-        switch (LOWORD(wParam))
-        {
-        case ID_LOGIN:
-            LogIn(hwnd, msg, wParam, lParam);
-            break;
-        case ID_LOGOUT:
-            LogOut(hwnd, msg, wParam, lParam);
-            break;
-
-        case ID_SUBMIT: // Execute 버튼     
-            SendQuery(hwnd, msg, wParam, lParam);
-            break;
-        
-
-        case ID_REFRESH:
-            RefreshAll();
-            break;
-
-        case ID_PREV_QUERYLIST:
-            editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetSelectedText().c_str());
-            break;
-
-        case ID_AUTOCOMMIT:
-            SetTransactionMode(hwnd, msg, wParam, lParam);
-            autoCommitToggle->Invalidate();
-           
-            break;
-
-        case ID_COMMIT:
-            SetTransactionMode(TransactionType::Commit);
-            autoCommitToggle->Invalidate();
-            commitButton->Invalidate();
-            rollbackButton->Invalidate();
-            break;
-
-        case ID_ROLLBACK:
-            SetTransactionMode(TransactionType::Rollback);
-            autoCommitToggle->Invalidate();
-            commitButton->Invalidate();
-            rollbackButton->Invalidate();
-            break;
-
-        case ID_CLEAR_RESULT:
-            resultLog->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
-            break;
-
-        case ID_EDIT:
-        {
-            if (HIWORD(wParam) == EN_CHANGE) 
-            {
-                static bool isFormatting = false;
-                if (!isFormatting)
-                {
-                    isFormatting = true;
-                    ApplySqlHighlight();
-                    isFormatting = false;
-                }
-            }
-            break;
-        }
-        
-        case ID_MENU_LOAD_QUERY:
-            // 파일 열기 다이얼로그 띄우는 함수 호출
-            //LoadQueryFromFile();
-            break;
-
-        case ID_MENU_SAVE_QUERY:
-            // 현재 에디트 박스 텍스트 파일로 저장
-            //SaveQueryToFile();
-            break;
-
-        case ID_MENU_EXIT:
-            DestroyWindow(hwnd);
-            break;
-
-        }
-        break;
-    }
-    case WM_NOTIFY:
-    {
-        NotifyTreeClick(hwnd, msg, wParam, lParam);
-        NotifyTableMaking(hwnd, msg, wParam, lParam);
-        return NotifyTableColoring(hwnd, msg, wParam, lParam);
-        break;
-    }
-
-    case WM_CTLCOLORSTATIC:
-    {
-        HDC hdcStatic = (HDC)wParam;
-        HWND hwndStatic = (HWND)lParam;
-
-        
-        if (GetDlgCtrlID(hwndStatic) == ID_USED_TIME || GetDlgCtrlID(hwndStatic) == ID_NUMOF_COLUMNS)
-        {
-            // 글자 뒤의 배경색을 흰색으로 설정
-            SetBkColor(hdcStatic, RGB(255, 255, 255));
-
-            // 글자 자체의 색상을 설정 (필요한 경우)
-            // SetTextColor(hdcStatic, RGB(0, 0, 0));
-
-            // 컨트롤의 나머지 영역을 채울 흰색 브러시 반환
-            return (INT_PTR)GetStockObject(WHITE_BRUSH);
-        }
-        //return (INT_PTR)GetSysColorBrush(COLOR_BTNFACE); // 나머지는 기본색 유지
-        
-        break;
-    }
-    
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-    }
-
-    return DefWindowProc(hwnd, msg, wParam, lParam);
-}
-
 void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     
@@ -460,7 +462,6 @@ void DatabaseWindow::LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     WriteMsg(L"Log Out", false);
 }
 
-
 //////////////////////////////////////////////////////////// query process ////////////////////////////////////////////////////////////
 my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
 {
@@ -503,7 +504,6 @@ my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
     WriteQueryResult(query, ms);
     return queryResult;
 }
-
 void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     std::wstring query = editUI->GetTextWFromHWND();
@@ -795,70 +795,6 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
     WriteMsg(resultLog);
 }
-
-
-//////////////////////////////////////////////////////////// Drawing & Update ////////////////////////////////////////////////////////////
-LRESULT CALLBACK DatabaseWindow::RichEditSubProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
-{
-    switch (msg)
-    {
-    case WM_KEYDOWN:
-    {
-        bool isCtrl = (GetKeyState(VK_CONTROL) & 0x8000);
-        bool hasQuery = prevQueryListBox->GetCount() != 0;
-        if (isCtrl && hasQuery)
-        {
-            if (prevQueryListBox->GetCurrIndex() == -1)
-            {
-                std::wstring query = editUI->GetTextWFromHWND();
-                prevQueryListBox->SaveCurrQuery(query);
-            }
-
-            if (wParam == VK_UP) 
-            {
-                prevQueryListBox->TravelIndex(1); 
-                editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetTextFromIndex().c_str());
-                return 0; // RichEdit의 기본 동작(커서 이동) 무시
-            }
-            else if (wParam == VK_DOWN)
-            {
-                prevQueryListBox->TravelIndex(-1);
-                editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetTextFromIndex().c_str());
-                return 0; // RichEdit의 기본 동작(커서 이동) 무시
-            }
-
-           
-
-            //ShowResultMsg(L"Curr Index: " + std::to_wstring(prevQueryListBox->GetCurrIndex()));
-         
-        }
-        break;
-    }
-
-    case WM_PASTE:
-    {
-        if (OpenClipboard(hwnd))
-        { // hwnd는 매개변수로 들어온 RichEdit 핸들
-            HANDLE hData = GetClipboardData(CF_UNICODETEXT);
-            if (hData)
-            {
-                wchar_t* pText = static_cast<wchar_t*>(GlobalLock(hData));
-                if (pText)
-                {
-                    SendMessage(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&g_defaultCF);
-                    SendMessage(hwnd, EM_REPLACESEL, TRUE, (LPARAM)pText);
-                    //SendMessage(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&g_defaultCF);
-                    GlobalUnlock(hData);
-                }
-            }
-            CloseClipboard();
-            return 0; // RichEdit의 자체적인 서식 포함 붙여넣기 방지
-        }
-        break;
-    }
-    }
-    return DefSubclassProc(hwnd, msg, wParam, lParam);
-}
 void DatabaseWindow::DrawAutoTransaction(LPDRAWITEMSTRUCT lpDrawItem, HDC hdc, RECT rect)
 {
     if (lpDrawItem->CtlID == ID_AUTOCOMMIT) // 커밋 버튼이라면
@@ -935,6 +871,69 @@ void DatabaseWindow::DrawAutoTransaction(LPDRAWITEMSTRUCT lpDrawItem, HDC hdc, R
         DrawText(hdc, buf, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     }
 }
+
+//////////////////////////////////////////////////////////// Edit Box ////////////////////////////////////////////////////////////
+LRESULT CALLBACK DatabaseWindow::RichEditSubProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+    switch (msg)
+    {
+    case WM_KEYDOWN:
+    {
+        bool isCtrl = (GetKeyState(VK_CONTROL) & 0x8000);
+        bool hasQuery = prevQueryListBox->GetCount() != 0;
+        if (isCtrl && hasQuery)
+        {
+            if (prevQueryListBox->GetCurrIndex() == -1)
+            {
+                std::wstring query = editUI->GetTextWFromHWND();
+                prevQueryListBox->SaveCurrQuery(query);
+            }
+
+            if (wParam == VK_UP) 
+            {
+                prevQueryListBox->TravelIndex(1); 
+                editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetTextFromIndex().c_str());
+                return 0; // RichEdit의 기본 동작(커서 이동) 무시
+            }
+            else if (wParam == VK_DOWN)
+            {
+                prevQueryListBox->TravelIndex(-1);
+                editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetTextFromIndex().c_str());
+                return 0; // RichEdit의 기본 동작(커서 이동) 무시
+            }
+
+           
+
+            //ShowResultMsg(L"Curr Index: " + std::to_wstring(prevQueryListBox->GetCurrIndex()));
+         
+        }
+        break;
+    }
+
+    case WM_PASTE:
+    {
+        if (OpenClipboard(hwnd))
+        { // hwnd는 매개변수로 들어온 RichEdit 핸들
+            HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+            if (hData)
+            {
+                wchar_t* pText = static_cast<wchar_t*>(GlobalLock(hData));
+                if (pText)
+                {
+                    SendMessage(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&g_defaultCF);
+                    SendMessage(hwnd, EM_REPLACESEL, TRUE, (LPARAM)pText);
+                    //SendMessage(hwnd, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&g_defaultCF);
+                    GlobalUnlock(hData);
+                }
+            }
+            CloseClipboard();
+            return 0; // RichEdit의 자체적인 서식 포함 붙여넣기 방지
+        }
+        break;
+    }
+    }
+    return DefSubclassProc(hwnd, msg, wParam, lParam);
+}
 void DatabaseWindow::ApplySqlHighlight()
 {
     const HWND& hRichEdit = editUI->GetHWND();
@@ -1003,6 +1002,8 @@ void DatabaseWindow::ApplySqlHighlight()
     SendMessage(hRichEdit, WM_SETREDRAW, TRUE, 0);
     InvalidateRect(hRichEdit, NULL, TRUE);
 }
+
+//////////////////////////////////////////////////////////// Log ////////////////////////////////////////////////////////////
 void DatabaseWindow::WriteMsg(const std::wstring str, bool isError)
 {
     std::wstring time = GetTimeString();
@@ -1033,18 +1034,17 @@ void DatabaseWindow::WriteMsg(const std::wstring str, bool isError)
     resultLog->SendToHWND(EM_SETSEL, -1, -1);
     resultLog->SendToHWND(WM_VSCROLL, SB_BOTTOM, 0);
 }
-
 void DatabaseWindow::WriteQueryResult(const std::wstring query, double ms)
 {
     wchar_t buffer[32] = { 0 };
     swprintf_s(buffer, L" [%.4f ms]", ms);
+    std::wstring msStr = std::to_wstring(ms);
     std::wstring resultLog = query; resultLog += buffer;
     WriteMsg(resultLog);
 }
-
 void DatabaseWindow::UpdateUsedTimeAndColumns(double ms, my_ulonglong columns)
 {
-    wchar_t buffer[16] = { 0 };
+    wchar_t buffer[32] = { 0 };
     swprintf_s(buffer, L"%.4f", ms);
     std::wstring timeResult = L"Time spent (ms): "; timeResult += buffer;
     std::wstring columnResult = L"Rows: " + std::to_wstring(columns);
@@ -1053,6 +1053,7 @@ void DatabaseWindow::UpdateUsedTimeAndColumns(double ms, my_ulonglong columns)
     numOfColumns->SendToHWND(WM_SETTEXT, 0, (LPARAM)columnResult.c_str());
 }
 
+//////////////////////////////////////////////////////////// Others ////////////////////////////////////////////////////////////
 void DatabaseWindow::RefreshAll()
 {
     RefreshTree();

@@ -32,45 +32,45 @@ class DatabaseWindow : public WindowEX
 			str.end()
 		);
 	}
-
-	// DBmain
 	static void WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	///////////////////////////////// Account /////////////////////////////////
 	static void LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static void LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	// WM_DRAWITEM
-	static void DrawAutoTransaction(LPDRAWITEMSTRUCT lpDrawItem, HDC hdc, RECT rect);
-
-
+	///////////////////////////////// Query process /////////////////////////////////
 	static my_ulonglong WorkQueryProcess(const std::wstring& query);
 	static void SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	
-	static bool RefreshTree();
-	static LRESULT CALLBACK RichEditSubProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
-
+	///////////////////////////////// Transaction /////////////////////////////////
 	enum class TransactionType
 	{
 		Start,
 		Commit,
 		Rollback
 	};
-
 	static void SetTransactionMode(const TransactionType& type);
+	static void SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static void DrawAutoTransaction(LPDRAWITEMSTRUCT lpDrawItem, HDC hdc, RECT rect);
 
+	///////////////////////////////// Tree /////////////////////////////////
+	static bool RefreshTree();
 	static void NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static void NotifyTableMaking(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static uint32_t NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	static void SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	static void RefreshAll();
+	///////////////////////////////// Edit box /////////////////////////////////
+	static LRESULT CALLBACK RichEditSubProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 	static void ApplySqlHighlight();
 
-
+	///////////////////////////////// Log /////////////////////////////////
 	static void WriteMsg(const std::wstring str, bool isError = false);
 	static void WriteQueryResult(const std::wstring query, double ms = 0.0);
 	static void UpdateUsedTimeAndColumns(double ms, my_ulonglong columns);
+
+	///////////////////////////////// Others /////////////////////////////////
+	static void RefreshAll();
 
 public:
 	DatabaseWindow(WindowInformations info, bool isAdmin) :
@@ -82,7 +82,6 @@ public:
 
 	bool InitializeWindow(const wchar_t* title, WNDPROC wndProc) override;
 
-	//static LRESULT CALLBACK DBLogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	
 	void Shutdown() override;
