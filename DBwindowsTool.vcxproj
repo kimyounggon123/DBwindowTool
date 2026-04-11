@@ -108,8 +108,8 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\x64\Debug;C:\Bitnami\wampstack-8.1.2-0\mariadb\lib</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Bitnami\wampstack-8.1.2-0\mariadb\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);libmariadb.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -126,15 +126,14 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\x64\Debug;C:\Bitnami\wampstack-8.1.2-0\mariadb\lib</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Bitnami\wampstack-8.1.2-0\mariadb\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);libmariadb.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Connector.cpp" />
     <ClCompile Include="Database\DatabaseAccount.cpp" />
-    <ClCompile Include="Database\DBStrings.cpp" />
     <ClCompile Include="JSON\Jsonify.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ToolFramework.cpp" />

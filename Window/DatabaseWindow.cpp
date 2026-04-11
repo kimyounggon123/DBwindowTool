@@ -36,7 +36,6 @@ TableUI* listView = nullptr;
 TreeView* hTreeView = nullptr;
 HistoryListBox* prevQueryListBox = nullptr;
 
-
 CHARFORMAT2 g_defaultCF;
 void DatabaseWindow::Shutdown()
 {
@@ -189,7 +188,6 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 }
 
 
-
 //////////////////////////////////////////////////////////// Initialize ////////////////////////////////////////////////////////////
 bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 {
@@ -323,24 +321,28 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 }
 void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    
     // 메뉴 생성
     hMenuBar = CreateMenu();
 
-    // 2. "파일" 서브 메뉴 생성
-    HMENU hFileMenu = CreatePopupMenu();
-    AppendMenuW(hFileMenu, MF_STRING, ID_MENU_LOAD_QUERY, L"쿼리 불러오기(&O)");
-    AppendMenuW(hFileMenu, MF_STRING, ID_MENU_SAVE_QUERY, L"쿼리 저장하기(&S)");
-    AppendMenuW(hFileMenu, MF_SEPARATOR, 0, NULL); // 구분선
-    AppendMenuW(hFileMenu, MF_STRING, ID_MENU_EXIT, L"종료(&X)");
-    AppendMenuW(hMenuBar, MF_POPUP, (UINT_PTR)hFileMenu, L"파일(&F)"); // 마지막에 서브 메뉴 붙이기
+    // 파일 서브 메뉴 생성
+    //HMENU hFileMenu = CreatePopupMenu();
+    //AppendMenuW(hFileMenu, MF_STRING, ID_MENU_LOAD_QUERY, L"쿼리 불러오기(&O)");
+    //AppendMenuW(hFileMenu, MF_STRING, ID_MENU_SAVE_QUERY, L"쿼리 저장하기(&S)");
+    //AppendMenuW(hFileMenu, MF_SEPARATOR, 0, NULL); // 구분선
+    //AppendMenuW(hFileMenu, MF_STRING, ID_MENU_EXIT, L"종료(&X)");
+    //AppendMenuW(hMenuBar, MF_POPUP, (UINT_PTR)hFileMenu, L"파일(&F)"); // 마지막에 서브 메뉴 붙이기
 
-    // 3. "히스토리" 서브 메뉴 생성
+    // 히스토리 서브 메뉴 생성
     HMENU hHistoryMenu = CreatePopupMenu();
     AppendMenuW(hHistoryMenu, MF_STRING, ID_MENU_CLEAR_HISTORY, L"기록 삭제");
     AppendMenuW(hMenuBar, MF_POPUP, (UINT_PTR)hHistoryMenu, L"히스토리(&H)"); // 마지막에 서브 메뉴 붙이기
 
-    // 5. 윈도우에 메뉴바 적용
+    // 플래그 메뉴 생성
+    HMENU hFlagMenu = CreatePopupMenu();
+    AppendMenuW(hHistoryMenu, MF_STRING, ID_MENU_CLEAR_HISTORY, L"기록 삭제");
+    AppendMenuW(hMenuBar, MF_POPUP, (UINT_PTR)hHistoryMenu, L"히스토리(&H)"); // 마지막에 서브 메뉴 붙이기
+
+    // 윈도우에 메뉴바 적용
     SetMenu(hwnd, hMenuBar);
     
     // id 창
@@ -414,7 +416,6 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     //prevQueryListBox->Create(0, WC_LISTBOX, L"prevList", WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY, hwnd, (HMENU)ID_PREV_QUERYLIST, hInstance);
     //prevQueryListBox->SetFont(hFontBold);
 }
-
 
 //////////////////////////////////////////////////////////// account ////////////////////////////////////////////////////////////
 void DatabaseWindow::LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -1058,3 +1059,6 @@ void DatabaseWindow::RefreshAll()
 {
     RefreshTree();
 }
+
+
+

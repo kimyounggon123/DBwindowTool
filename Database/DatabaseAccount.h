@@ -121,6 +121,10 @@ public:
 	bool Rollback();
 	bool IsDirty() const { return isDirty; }
 
+	my_ulonglong SetForeignKeyCheck(bool flag)
+	{
+		return flag = true ? ExecuteQuery("SET FOREIGN_KEY_CHECKS = 1;") : ExecuteQuery("SET FOREIGN_KEY_CHECKS = 0;");
+	}
 
 	std::wstring GetDatabaseName() { return UTF8ToWString(DBinfo.GetDatabase()); }
 

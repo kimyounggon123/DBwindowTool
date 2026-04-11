@@ -56,6 +56,7 @@ struct DBQueryExamples
 	std::wstring insert = L"INSERT INTO defaultTable (name) VALUES('test');";
 	std::wstring update = L"UPDATE defaultTable SET name = 'newName' WHERE id = 1;";
 	std::wstring del = L"DELETE FROM defaultTable WHERE id = 1;";
+	std::wstring truncate = L"TRUNCATE TABLE defaultTable;";
 
 	std::wstring describeTable = L"DESCRIBE defaultTable;";
 	std::wstring showTable = L"SHOW TABLES;";

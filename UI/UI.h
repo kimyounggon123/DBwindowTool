@@ -63,6 +63,12 @@ public:
 		UIElement(imagePath, transform), winUI(nullptr)
 	{}
 
+	virtual ~WindowUI()
+	{
+		if (winUI != NULL && IsWindow(winUI)) DestroyWindow(winUI);
+		winUI = NULL;
+	}
+
 	virtual bool Create(DWORD ExStyle, LPCWSTR lpClassName, LPCWSTR lpWinName, DWORD dwStyle, HWND parentsWindow, HMENU id, HINSTANCE hInstance)
 	{
 		if (winUI != nullptr) return true;
@@ -141,7 +147,6 @@ public:
 };
 
 
-
 #include <commctrl.h> // ListView 사용
 #pragma comment(lib, "Comctl32.lib")
 struct CellData
@@ -196,9 +201,10 @@ public:
 		//int currentWidth = ListView_GetColumnWidth(winUI, 0);
 		for (int i = 0; i < columns.size(); i++)
 		{
-			SendMessage(winUI, LVM_SETCOLUMNWIDTH, i, MAKELPARAM(LVSCW_AUTOSIZE_USEHEADER, 0)); // 헤더 길이에 맞춤
+			SendMessage(winUI, LVM_SETCOLUMNWIDTH, i, MAKELPARAM(LVSCW_AUTOSIZE_USEHEADER, 0)); // 우선적으로 헤더 길이에 맞춤
 			//SendMessage(winUI, LVM_SETCOLUMNWIDTH, i, MAKELPARAM(LVSCW_AUTOSIZE, 0)); // 데이터 내용에 맞춤
 			int currentWidth = ListView_GetColumnWidth(winUI, i);
+			currentWidth = currentWidth > 200 ? 200 : currentWidth;
 			ListView_SetColumnWidth(winUI, i, currentWidth + 20);
 		}
 	}
@@ -289,6 +295,7 @@ public:
 			//historyList.pop_front();
 			SendMessage(winUI, LB_DELETESTRING, GetCount() - 1, 0);
 		}
+		currIndex = -1;
 	}
 
 	std::wstring GetSelectedText()
@@ -322,6 +329,62 @@ public:
 
 	int GetCurrIndex() { return currIndex; }
 	int GetCount()  { return static_cast<int>(historyList.size()); }
+
+};
+
+
+
+class SubMenu
+{
+	HMENU menu;
+	std::wstring title;
+
+public:
+	SubMenu(const std::wstring& title): 
+		title(title), menu(NULL)
+	{}
+	~SubMenu()
+	{
+		if (menu != NULL) DestroyMenu(menu);
+		menu = NULL;
+	}
+
+	bool Create(const USHORT& ID)
+	{
+		menu = CreatePopupMenu();
+		AppendMenuW(menu, MF_STRING, ID, title.c_str());
+		return menu != NULL;
+	}
+};
+
+// 1개만 생성
+class MenuBar
+{
+	HMENU menu;
+	std::wstring title;
+
+	std::vector<SubMenu> menuList;
+public:
+	MenuBar(const std::wstring& title) :
+		title(title), menu(NULL)
+	{}
+	~MenuBar()
+	{
+		if (menu != NULL) DestroyMenu(menu);
+		menu = NULL;
+		menuList.clear();
+	}
+
+	bool Create()
+	{
+		menu = CreateMenu();
+		return menu != NULL;
+	}
+
+	bool Add()
+	{
+
+	}
 
 };
 #endif

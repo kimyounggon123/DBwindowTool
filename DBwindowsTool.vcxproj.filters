@@ -81,9 +81,6 @@
     <ClCompile Include="Database\DatabaseAccount.cpp">
       <Filter>소스 파일\Tools\Database</Filter>
     </ClCompile>
-    <ClCompile Include="Database\DBStrings.cpp">
-      <Filter>소스 파일\Tools\Database</Filter>
-    </ClCompile>
     <ClCompile Include="UI\UI.cpp">
       <Filter>소스 파일\Window\UI</Filter>
     </ClCompile>
