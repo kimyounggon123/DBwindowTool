@@ -132,7 +132,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Connector.cpp" />
     <ClCompile Include="Database\DatabaseAccount.cpp" />
     <ClCompile Include="JSON\Jsonify.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -140,13 +139,14 @@
     <ClCompile Include="UI\Button.cpp" />
     <ClCompile Include="UI\UI.cpp" />
     <ClCompile Include="UI\UImanager.cpp" />
+    <ClCompile Include="Utils\ThreadSafeQueue.cpp" />
     <ClCompile Include="Utils\Timer.cpp" />
     <ClCompile Include="Utils\Transform.cpp" />
+    <ClCompile Include="Window\DatabaseThread.cpp" />
     <ClCompile Include="Window\DatabaseWindow.cpp" />
     <ClCompile Include="Window\WindowEX.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Connector.h" />
     <ClInclude Include="Database\DatabaseAccount.h" />
     <ClInclude Include="Database\DBStrings.h" />
     <ClInclude Include="JSON\json.hpp" />
@@ -157,7 +157,9 @@
     <ClInclude Include="UI\Button.h" />
     <ClInclude Include="UI\UI.h" />
     <ClInclude Include="UI\UImanager.h" />
+    <ClInclude Include="Utils\ThreadSafeQueue.h" />
     <ClInclude Include="Utils\Transform.h" />
+    <ClInclude Include="Window\DatabaseThread.h" />
     <ClInclude Include="Window\DatabaseWindow.h" />
     <ClInclude Include="Window\resource.h" />
     <ClInclude Include="Window\WindowEX.h" />

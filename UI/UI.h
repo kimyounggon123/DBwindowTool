@@ -149,6 +149,18 @@ public:
 
 #include <commctrl.h> // ListView 사용
 #pragma comment(lib, "Comctl32.lib")
+enum class ColumnType
+{
+	Normal, PK, FK
+};
+struct ColumnData
+{
+	ColumnType type;
+	std::wstring value;
+	ColumnData(ColumnType type = ColumnType::Normal, const std::wstring& value = L"") :
+		type(type), value(value)
+	{}
+};
 struct CellData
 {
 	enum_field_types type;
@@ -169,11 +181,12 @@ struct CellData
 	}
 };
 
+
 class TableUI : public WindowUI
 {
 	bool useVirtualTable;
 	// 헤더나 클래스 멤버로 선언
-	std::vector<std::wstring> columns; // 컬럼명 저장
+	std::vector<ColumnData> columns; // 컬럼명 저장
 	std::vector<std::vector<CellData>> tableData; // 실제 데이터 저장
 public:
 	TableUI(const std::wstring& imagePath, const Position& pos, bool useVirtualTable = true) :
@@ -210,7 +223,7 @@ public:
 	}
 
 	
-	void SetColumns(const std::vector<std::wstring>& cols);
+	void SetColumns(const std::vector<ColumnData>& cols);
 	void AddRow(const std::vector<CellData>& data);
 	void SetItemCount();
 	void Clear();
@@ -218,6 +231,7 @@ public:
 	size_t GetColumnSize() { return columns.size(); }
 	size_t GetRowSize() { return tableData.size(); }
 
+	const ColumnData& GetColumnData(int n) { return columns[n]; }
 	const CellData& GetRealItem(int r, int c) { return tableData[r][c]; }
 };
 

@@ -28,7 +28,8 @@ std::wstring UTF8ToWString(const std::string& utf8Str) {
 }
 
 
-DatabaseAccount::DatabaseAccount(): conn(nullptr), res(nullptr), row(nullptr), isTransaction(false), isDirty(false)
+DatabaseAccount::DatabaseAccount(int maxRow):
+	conn(nullptr), res(nullptr), row(nullptr), isTransaction(false), isDirty(false), maxRow(maxRow)
 {}
 
 DatabaseAccount::~DatabaseAccount() 
@@ -46,6 +47,7 @@ bool DatabaseAccount::Connect(const char* server, const char* user, const char* 
 		return false;
 	}
 	mysql_set_character_set(conn, "utf8");
+
 	DBinfo.LogIn(server, user, password, database);
 	DBinfo.Connect();
 	

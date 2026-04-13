@@ -31,12 +31,6 @@
     <Filter Include="헤더 파일\Tools\Database">
       <UniqueIdentifier>{e368a4a7-70d1-40a7-84a6-b2d4a60938f4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="소스 파일\Connector">
-      <UniqueIdentifier>{939c69b2-c3df-479a-a6c8-34bfc4be8027}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="헤더 파일\Connector">
-      <UniqueIdentifier>{ff03278d-b995-435f-b9eb-d3c22e5843db}</UniqueIdentifier>
-    </Filter>
     <Filter Include="소스 파일\Window">
       <UniqueIdentifier>{ba4e1353-5022-413b-8149-3e9c81b6fbbe}</UniqueIdentifier>
     </Filter>
@@ -58,6 +52,12 @@
     <Filter Include="헤더 파일\Tools\Utils">
       <UniqueIdentifier>{fc640256-209d-4362-8ae0-39910e99fe64}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Window\Thread">
+      <UniqueIdentifier>{939c69b2-c3df-479a-a6c8-34bfc4be8027}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Window\Thread">
+      <UniqueIdentifier>{ff03278d-b995-435f-b9eb-d3c22e5843db}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -65,9 +65,6 @@
     </ClCompile>
     <ClCompile Include="JSON\Jsonify.cpp">
       <Filter>소스 파일\Tools\JSON</Filter>
-    </ClCompile>
-    <ClCompile Include="Connector.cpp">
-      <Filter>소스 파일\Connector</Filter>
     </ClCompile>
     <ClCompile Include="ToolFramework.cpp">
       <Filter>소스 파일</Filter>
@@ -96,6 +93,12 @@
     <ClCompile Include="Utils\Timer.cpp">
       <Filter>소스 파일\Tools\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Window\DatabaseThread.cpp">
+      <Filter>소스 파일\Window\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\ThreadSafeQueue.cpp">
+      <Filter>소스 파일\Tools\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="JSON\json.hpp">
@@ -103,9 +106,6 @@
     </ClInclude>
     <ClInclude Include="JSON\Jsonify.h">
       <Filter>헤더 파일\Tools\JSON</Filter>
-    </ClInclude>
-    <ClInclude Include="Connector.h">
-      <Filter>헤더 파일\Connector</Filter>
     </ClInclude>
     <ClInclude Include="ToolFramework.h">
       <Filter>헤더 파일</Filter>
@@ -141,6 +141,12 @@
       <Filter>헤더 파일\Tools\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Timer.h">
+      <Filter>헤더 파일\Tools\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Window\DatabaseThread.h">
+      <Filter>헤더 파일\Window\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\ThreadSafeQueue.h">
       <Filter>헤더 파일\Tools\Utils</Filter>
     </ClInclude>
   </ItemGroup>

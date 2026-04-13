@@ -475,13 +475,20 @@ my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
     MYSQL_FIELD* fields = account->getFieldName();
     unsigned int num_fields = account->getFieldNum();
 
-    std::vector<std::wstring> columns;
-    for (unsigned int i = 0; i < num_fields; ++i)  // 각 row의 field를 출력
-        columns.push_back(UTF8ToWString(fields[i].name));
+    std::vector<ColumnData> columns;
+    for (unsigned int i = 0; i < num_fields; ++i)
+    {
+        ColumnType type = ColumnType::Normal;
+        if (fields[i].flags & PRI_KEY_FLAG) type = ColumnType::PK;
+        else if (fields[i].flags & MULTIPLE_KEY_FLAG) type = ColumnType::FK;
+        columns.push_back({ type, UTF8ToWString(fields[i].name) });
+    }
+       
     listView->SetColumns(columns);
 
     MYSQL_ROW row = nullptr;
-    while ((row = account->fetchRow()))
+    int count = 0;
+    while ((row = account->fetchRow()) && count < account->GetMaxRow())
     {
         std::vector<CellData> oneRow;
 
@@ -495,7 +502,9 @@ my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
             oneRow.push_back(cell);
         }
         listView->AddRow(oneRow);
+        count++;
     }
+
     listView->SetItemCount();
     listView->Resize();
     
@@ -527,7 +536,7 @@ void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
    
 }
 
-//////////////////////////////////////////////////////////// tree ////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////// table & tree ////////////////////////////////////////////////////////////
 bool DatabaseWindow::RefreshTree()
 {
     hTreeView->DeleteAll(); //  먼저 삭제
@@ -688,7 +697,25 @@ uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam,
             int row = (int)lplvcd->nmcd.dwItemSpec;
             int col = lplvcd->iSubItem;
 
-            // 1. 데이터 벡터에서 셀의 텍스트 가져옴
+
+            /// column 서식
+            ColumnData colData = listView->GetColumnData(col);
+            if (colData.type == ColumnType::PK)
+            {
+ 
+                lplvcd->clrTextBk = RGB(200, 255, 200); // 배경: 연한 초록 (FK 느낌)
+            }
+            else if (colData.type == ColumnType::FK)
+            {
+                lplvcd->clrTextBk = RGB(200, 255, 255); // 배경: 연한 초록 (FK 느낌)
+            }
+            else
+            {       
+                lplvcd->clrTextBk = RGB(255, 255, 255);
+            }
+
+            /// 실제 데이터 서식
+            // 데이터 벡터에서 셀의 텍스트 가져옴
             CellData value = listView->GetRealItem(row, col);
             if (value.isRealNULL)
             {

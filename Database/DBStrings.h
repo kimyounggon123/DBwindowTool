@@ -18,19 +18,19 @@ struct DBQueryExamples
 	KeywordGroup blueKeyword =
 	{ { L"SELECT", L"FROM", L"WHERE", L"INSERT", L"UPDATE", L"DELETE", L"USE",
 		L"JOIN", L"INNER", L"OUTER", L"ON", L"LEFT", L"RIGHT", L"FULL", L"USING",
-		L"DESCRIBE" }, RGB(30, 144, 255), true};
+		L"DESCRIBE", L"LIMIT", L"EXPLAIN", L"ORDER BY"}, RGB(30, 144, 255), true};
 
 	KeywordGroup purpleKeyword =
 	{ { L"AND", L"OR", L"NOT", L"IN", L"EXISTS", L"BETWEEN", L"LIKE", L"IS", L"NULL",
 			L"AS", L"DISTINCT", L"ANY", L"ALL", L"SOME",
-			L"CASE", L"WHEN", L"THEN", L"ELSE", L"END", }, RGB(150, 105, 225), true };
+			L"CASE", L"WHEN", L"THEN", L"ELSE", L"END"}, RGB(150, 105, 225), true};
 	
 	KeywordGroup indigoKeyword = 
 	{ { L"INT", L"INTEGET", L"TINYINT", L"BIGINT", L"DECIMAL", L"NUMERIC", L"FLOAT", L"DOUBLE",
 			L"CHAR", L"VARCHAR", L"TEXT" ,L"LONGTEXT", L"NVARCHAR",
 			L"DATETIME", L"TIMESTAMP", L"TIME", L"BOOLEAN",
-			L"AUTO_INCREMENT", L"DEFAULT", L"PRIVATE", L"FOREIGN", L"KEY"},RGB(35, 35, 225), true};
-	
+			L"AUTO_INCREMENT", L"DEFAULT", L"PRIVATE KEY", L"FOREIGN KEY", L"ASC", L"DESC"},RGB(35, 35, 225), true};
+
 	KeywordGroup yellowKeyword =
 	{ { L"CREATE", L"ALTER", L"DROP", L"TRUNCATE", L"NAME",
 			L"COUNT", L"SUM", L"AVG", L"MIN", L"MAX"}, RGB(130, 130, 0), true };

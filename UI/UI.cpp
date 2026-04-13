@@ -1,6 +1,6 @@
 #include "UI.h"
 
-void TableUI::SetColumns(const std::vector<std::wstring>& cols)
+void TableUI::SetColumns(const std::vector<ColumnData>& cols)
 {
     // column 생성은 모드 관계없이 수행
     columns = cols;
@@ -10,7 +10,7 @@ void TableUI::SetColumns(const std::vector<std::wstring>& cols)
     
     for (int i = 0; i < cols.size(); ++i)
     {
-        col.pszText = (LPWSTR)cols[i].c_str();
+        col.pszText = (LPWSTR)cols[i].value.c_str();
         col.cx = 120;
         col.iSubItem = i;
         SendMessageW(winUI, LVM_INSERTCOLUMNW, i, (LPARAM)&col);

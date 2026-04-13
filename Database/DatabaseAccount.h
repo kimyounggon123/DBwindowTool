@@ -87,12 +87,13 @@ class DatabaseAccount
 	bool isTransaction;
 	bool isDirty;
 
+	int maxRow;
 	std::vector<std::wstring> prevQuerys;
 
 	bool IsUseQuery(const std::string query);
 	std::string ExtractDatabaseName(const std::string& query);
 public:
-	DatabaseAccount();
+	DatabaseAccount(int maxRow = 20000);
 	virtual ~DatabaseAccount();
 
 	bool Connect(const char* server, const char* user, const char* password, const char* database);
@@ -120,6 +121,7 @@ public:
 	bool Commit();
 	bool Rollback();
 	bool IsDirty() const { return isDirty; }
+	const int GetMaxRow() const { return maxRow; }
 
 	my_ulonglong SetForeignKeyCheck(bool flag)
 	{
