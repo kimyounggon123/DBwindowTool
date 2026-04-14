@@ -1,10 +1,8 @@
 #ifndef _UI_H
 #define _UI_H
 
-#include "..\stdafx.h"
 #include "..\Utils\Transform.h"
-#include <string>
-#include "mysql.h"
+#include "DatabaseAccount.h"
 class UIElement
 {
 	int ID;
@@ -149,38 +147,6 @@ public:
 
 #include <commctrl.h> // ListView 사용
 #pragma comment(lib, "Comctl32.lib")
-enum class ColumnType
-{
-	Normal, PK, FK
-};
-struct ColumnData
-{
-	ColumnType type;
-	std::wstring value;
-	ColumnData(ColumnType type = ColumnType::Normal, const std::wstring& value = L"") :
-		type(type), value(value)
-	{}
-};
-struct CellData
-{
-	enum_field_types type;
-	std::wstring value;
-	bool isRealNULL; // 실제 DB의 NULL 여부를 저장하는 플래그
-
-	CellData(enum_field_types type, const std::wstring& value = L"", bool isRealNULL = false) : type(type), value(value), isRealNULL(isRealNULL)
-	{}
-
-	bool IsTime()
-	{
-		return type == MYSQL_TYPE_DATETIME || type == MYSQL_TYPE_TIMESTAMP;
-	}
-
-	bool IsNum()
-	{
-		return type == MYSQL_TYPE_SHORT || type == MYSQL_TYPE_LONG || type == MYSQL_TYPE_LONGLONG || type == MYSQL_TYPE_FLOAT || type == MYSQL_TYPE_DOUBLE || type == MYSQL_TYPE_INT24;
-	}
-};
-
 
 class TableUI : public WindowUI
 {
