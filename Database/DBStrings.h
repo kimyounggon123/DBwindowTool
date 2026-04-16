@@ -23,7 +23,8 @@ struct DBQueryExamples
 	KeywordGroup purpleKeyword =
 	{ { L"AND", L"OR", L"NOT", L"IN", L"EXISTS", L"BETWEEN", L"LIKE", L"IS", L"NULL",
 			L"AS", L"DISTINCT", L"ANY", L"ALL", L"SOME",
-			L"CASE", L"WHEN", L"THEN", L"ELSE", L"END"}, RGB(150, 105, 225), true};
+			L"CASE", L"WHEN", L"THEN", L"ELSE", L"END", L"MOD", L"DIV", L"XOR",
+			L"+", L"-", L"*", L"/", L"<", L">", L"=", L"<>", L"!=", L"%"}, RGB(150, 105, 225), true};
 	
 	KeywordGroup indigoKeyword = 
 	{ { L"INT", L"INTEGET", L"TINYINT", L"BIGINT", L"DECIMAL", L"NUMERIC", L"FLOAT", L"DOUBLE",

@@ -33,7 +33,7 @@
 #define ID_MENU_CLEAR_HISTORY 3003
 
 
-
+#define WM_POST_QUERY_RESULT 4000
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

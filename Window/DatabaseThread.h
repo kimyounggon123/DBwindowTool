@@ -6,9 +6,12 @@
 #include <Windows.h>
 #include "..\Utils\ThreadSafeQueue.h"
 #include "..\Utils\Timer.h"
+#include "resource.h"
+
 struct CommPacket
 {
-	std::string query;
+	HWND hRequestWnd; 
+	std::wstring query;
 	std::vector<ColumnData> columns; // 컬럼명 저장
 	std::vector<std::vector<CellData>> tableData; // 실제 데이터 저장
 
@@ -17,8 +20,10 @@ struct CommPacket
 
 	double ms;
 
-	CommPacket(): query(""), errNo(0), errMsg(L""), ms(0.0)
+	CommPacket(HWND wnd = NULL, const std::wstring query = L"") : hRequestWnd(wnd),
+		query(query), errNo(0), errMsg(L""), ms(0.0)
 	{}
+
 	~CommPacket()
 	{
 		columns.clear();
@@ -27,6 +32,11 @@ struct CommPacket
 			row.clear();
 		}
 		tableData.clear();
+	}
+
+	BOOL Post(UINT msg)
+	{
+		return PostMessageW(hRequestWnd, msg, 0, 0);
 	}
 };
 
@@ -67,6 +77,15 @@ public:
 	}
 
 	void Quit() { runFlag = false; }
+
+
+	bool IsLoggedIn() { return account->IsConnected(); }
+	bool LogIn(const std::string id, const std::string pw);
+	void LogOut();
+
+	std::wstring GetDatabaseName() { return account->GetDatabaseName(); }
+
+
 };
 
 #endif

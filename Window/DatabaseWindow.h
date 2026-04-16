@@ -7,6 +7,7 @@
 #include "DBStrings.h"
 #include <cstdint>
 #include <commctrl.h> // ListView »ç¿ë
+#include "DatabaseThread.h"
 #pragma comment(lib, "Comctl32.lib")
 
 
@@ -14,7 +15,7 @@ class DatabaseWindow : public WindowEX
 {
 	static HMENU hMenuBar;
 	static DatabaseAccount* account; 
-
+	static DatabaseThread* dbManager;
 	static DBQueryExamples queryExample;
 	
 	INITCOMMONCONTROLSEX icex;
@@ -39,6 +40,7 @@ class DatabaseWindow : public WindowEX
 	static void LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	///////////////////////////////// Query process /////////////////////////////////
+	static void ShowQueryResult();
 	static my_ulonglong WorkQueryProcess(const std::wstring& query);
 	static void SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

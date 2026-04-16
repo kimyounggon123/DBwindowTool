@@ -1,11 +1,13 @@
 #include "DatabaseThread.h"
 DatabaseThread::DatabaseThread() : account(nullptr),
 hThread(NULL), dwThreadID(0), hMutex(NULL),
-runFlag(true)
-{
-}
+runFlag(true),
+AccountToWindow(1000), WindowToAccount(1000)
+{}
+
 DatabaseThread::~DatabaseThread()
 {
+	Quit();
 	Close();
 }
 
@@ -55,7 +57,9 @@ unsigned int WINAPI DatabaseThread::Work(LPVOID lparam)
 	{
 		if (WtA.dequeue(output)) continue;
 		This->WorkQueryProcess(output); // 작업 진행
+		HWND& handle = output->hRequestWnd;
 		AtW.enqueue(std::move(output)); // 다시 사용자 window로
+		PostMessageW(handle, WM_POST_QUERY_RESULT, 0, 0);
 	}
 
 	return 0;
@@ -119,4 +123,24 @@ bool DatabaseThread::WorkQueryProcess(CommPacketPTR& pk)
 	pkPtr->errNo = queryResult;
 
 	return true;
+}
+
+
+bool DatabaseThread::LogIn(const std::string id, const std::string pw)
+{
+	if (account == nullptr) return false;
+
+	bool result = account->Connect("localhost", id.c_str(), pw.c_str(), "None");
+	if (!result)
+	{
+		account->Close();
+		return false;
+	}
+
+	return true;
+}
+void DatabaseThread::LogOut()
+{
+	if (!account->IsConnected()) return;
+	account->Close();
 }

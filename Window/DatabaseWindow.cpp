@@ -2,9 +2,8 @@
 
 DatabaseAccount* DatabaseWindow::account = nullptr;
 DBQueryExamples DatabaseWindow::queryExample;
-
+DatabaseThread* DatabaseWindow::dbManager = nullptr;
 HMENU DatabaseWindow::hMenuBar = NULL;
-
 
 // 여러 ui들
 WindowUI* id = nullptr;
@@ -40,6 +39,8 @@ CHARFORMAT2 g_defaultCF;
 void DatabaseWindow::Shutdown()
 {
     SAFE_FREE(account);
+    //dbManager->Quit();
+    SAFE_FREE(dbManager);
 }
 
 LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -179,6 +180,11 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
         break;
     }
 
+
+    case WM_POST_QUERY_RESULT:
+        ShowQueryResult();
+        break;
+
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
@@ -191,8 +197,6 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 //////////////////////////////////////////////////////////// Initialize ////////////////////////////////////////////////////////////
 bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 {
-    account = new DatabaseAccount();
-    
     icex.dwSize = sizeof(icex);
     icex.dwICC = ICC_LISTVIEW_CLASSES;
     InitCommonControlsEx(&icex);
@@ -316,9 +320,15 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
     g_defaultCF.wWeight = FW_NORMAL;
     g_defaultCF.bCharSet = DEFAULT_CHARSET;
 
+    account = new DatabaseAccount();
+    //dbManager = new DatabaseThread();
+    //dbManager->Initialize();
+
+
     WindowEX::InitializeWindow(title, wndProc);
     return true;
 }
+
 void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     // 메뉴 생성
@@ -436,7 +446,7 @@ void DatabaseWindow::LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
 
         currID->SendToHWND(WM_SETTEXT, 0, (LPARAM)idText.c_str());
-        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)UTF8ToWString("None").c_str());
+        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)(L"None"));
         WriteMsg(L"Log In success", false);
         RefreshTree();
         
@@ -464,6 +474,58 @@ void DatabaseWindow::LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 //////////////////////////////////////////////////////////// query process ////////////////////////////////////////////////////////////
+void DatabaseWindow::ShowQueryResult()
+{
+    CommPacketPTR ptr;
+    if (!dbManager->Dequeue(ptr))
+    {
+        WriteMsg(L"ptr is null!", true);
+        return;
+    }
+
+    try
+    {
+        if (ptr->errNo == -1) throw false;
+        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)dbManager->GetDatabaseName().c_str()); // 현재 데이터베이스 이름 출력
+        prevQueryListBox->AddQuery(ptr->query); // 사용 쿼리 저장
+        prevQueryListBox->SaveCurrQuery(L"");
+        editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
+        WriteQueryResult(ptr->query, ptr->ms);
+    }
+    catch (...)
+    {
+        WriteMsg(ptr->errMsg, true);
+    }
+    ptr.reset();
+}
+void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    std::wstring query = editUI->GetTextWFromHWND();
+    my_ulonglong result = 0;
+    try
+    {
+        /*
+        CommPacketPTR ptr = std::make_unique<CommPacket>(hwnd, query);
+        if (!dbManager->Enqueue(std::move(ptr))) throw L"Enqueue Fail!";
+        */
+        
+        result = WorkQueryProcess(query);
+
+        if (result == -1) throw account->GetLastErrorW();
+
+        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str()); // 현재 데이터베이스 이름 출력
+        prevQueryListBox->AddQuery(query); // 사용 쿼리 저장
+        prevQueryListBox->SaveCurrQuery(L"");
+        editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
+        
+    }
+    catch (const std::wstring msg)
+    {
+        WriteMsg(msg, true);
+    }
+
+}
+
 my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
 {
     timer.Start();
@@ -514,27 +576,6 @@ my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
     WriteQueryResult(query, ms);
     return queryResult;
 }
-void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    std::wstring query = editUI->GetTextWFromHWND();
-    my_ulonglong result = 0;
-    try
-    {
-        result = WorkQueryProcess(query);
-
-        if (result == -1) throw false;
-
-        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str()); // 현재 데이터베이스 이름 출력
-        prevQueryListBox->AddQuery(query); // 사용 쿼리 저장
-        prevQueryListBox->SaveCurrQuery(L"");
-        editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
-    }
-    catch (...)
-    {
-        WriteMsg(account->GetLastErrorW(), true);
-    }
-   
-}
 
 //////////////////////////////////////////////////////////// table & tree ////////////////////////////////////////////////////////////
 bool DatabaseWindow::RefreshTree()
@@ -547,7 +588,6 @@ bool DatabaseWindow::RefreshTree()
     }
     MYSQL_RES* dbRes = account->GetResult();
     MYSQL_ROW row;
-
 
     // 우선 DB 이름 다 가져오기
     std::vector<std::wstring> dbNames;
@@ -583,6 +623,7 @@ bool DatabaseWindow::RefreshTree()
     hTreeView->Invalidate();
     return true;
 }
+
 void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     

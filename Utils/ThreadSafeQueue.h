@@ -36,7 +36,7 @@ public:
 	}
 
 	bool pop(T& output) {
-		std::unique_lock<std::mutex> lock(queue_mtx);
+		std::unique_lock<std::mutex> lock(stack_mtx);
 		if (timeout_ms == INFINITE)
 		{
 			stack_cv.wait(lock, [this] { return !safe_stack.empty(); });
