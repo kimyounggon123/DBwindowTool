@@ -14,7 +14,6 @@
 class DatabaseWindow : public WindowEX
 {
 	static HMENU hMenuBar;
-	static DatabaseAccount* account; 
 	static DatabaseThread* dbManager;
 	static DBQueryExamples queryExample;
 	
@@ -22,27 +21,50 @@ class DatabaseWindow : public WindowEX
 	
 	bool isAdmin;
 
-	static void SanitizeForListView(std::wstring& str)
+	static void SanitizeForListView(std::wstring& str, bool changeEnterToSpace = false)
 	{
-		str.erase( 
-			std::remove_if(str.begin(), str.end(),
-				[](wchar_t c)
-				{
-					return c == L'\r' || c == L'\n';
-				}),
-			str.end()
-		);
+		if (changeEnterToSpace == true)
+		{
+			str.erase(
+				std::remove_if(str.begin(), str.end(),
+					[](wchar_t c)
+					{
+						return c == L'\r';
+					}),
+				str.end()
+			);
+			std::replace(str.begin(), str.end(), L'\n', L' ');
+		}
+		
+		else
+		{
+			str.erase(
+				std::remove_if(str.begin(), str.end(),
+					[](wchar_t c)
+					{
+						return c == L'\r' || c == L'\n';
+					}),
+				str.end()
+			);
+		}
 	}
 	static void WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+
+
 	///////////////////////////////// Account /////////////////////////////////
-	static void LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	static void LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static void TryLogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static void TryLogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	///////////////////////////////// Query process /////////////////////////////////
-	static void ShowQueryResult();
-	static my_ulonglong WorkQueryProcess(const std::wstring& query);
+	static bool SendQueryToThread(HWND hwnd, const PacketCode& code, const std::wstring& query);
+	//static my_ulonglong WorkQueryProcess(const std::wstring& query);
 	static void SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	// Process result 
+	static void NavigateQueryPacket(HWND hwnd);
+	static void ShowQueryResult(HWND hwnd, const ConnPacket* pk);
+	static void RefreshTree(HWND hwnd, const ConnPacket* pk);
 
 	///////////////////////////////// Transaction /////////////////////////////////
 	enum class TransactionType
@@ -56,7 +78,7 @@ class DatabaseWindow : public WindowEX
 	static void DrawAutoTransaction(LPDRAWITEMSTRUCT lpDrawItem, HDC hdc, RECT rect);
 
 	///////////////////////////////// Tree /////////////////////////////////
-	static bool RefreshTree();
+	static bool TryRefreshTree(HWND hwnd);
 	static void NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static void NotifyTableMaking(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static uint32_t NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

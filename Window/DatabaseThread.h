@@ -8,47 +8,49 @@
 #include "..\Utils\Timer.h"
 #include "resource.h"
 
-struct CommPacket
+enum class PacketCode
 {
-	HWND hRequestWnd; 
+	Normal = 0,
+	UserTyping,
+	LogIn,
+	LogOut,
+	RefreshTree,
+	Transaction
+};
+
+struct ConnPacket
+{
+	HWND hRequestWnd;
+	PacketCode head;
 	std::wstring query;
 	std::vector<ColumnData> columns; // 컬럼명 저장
 	std::vector<std::vector<CellData>> tableData; // 실제 데이터 저장
 
-	my_ulonglong errNo;
-	std::wstring errMsg;
-
 	double ms;
 
-	CommPacket(HWND wnd = NULL, const std::wstring query = L"") : hRequestWnd(wnd),
-		query(query), errNo(0), errMsg(L""), ms(0.0)
+	my_ulonglong numOfRows;
+	std::wstring errMsg;
+
+	ConnPacket(HWND hwnd, const PacketCode& head = PacketCode::Normal, const std::wstring query = L"") : hRequestWnd(hwnd), head(head),
+		query(query),  ms(0.0), numOfRows(0), errMsg(L"")
 	{}
 
-	~CommPacket()
+	~ConnPacket()
 	{
 		columns.clear();
-		for (std::vector<CellData> row : tableData)
-		{
-			row.clear();
-		}
 		tableData.clear();
 	}
 
-	BOOL Post(UINT msg)
-	{
-		return PostMessageW(hRequestWnd, msg, 0, 0);
-	}
 };
-
-using CommPacketPTR = std::unique_ptr<CommPacket>;
+using ConnPacketPTR = std::unique_ptr<ConnPacket>;
 
 class DatabaseThread
 {
 	Timer timer;
 	DatabaseAccount* account;
 
-	ThreadSafeQueue<CommPacketPTR> AccountToWindow; // db thread -> 사용자
-	ThreadSafeQueue<CommPacketPTR> WindowToAccount; // 사용자 -> db thread
+	ThreadSafeQueue<ConnPacketPTR> AccountToWindow; // db thread -> 사용자
+	ThreadSafeQueue<ConnPacketPTR> WindowToAccount; // 사용자 -> db thread
 
 	void Close();
 
@@ -57,8 +59,8 @@ class DatabaseThread
 	bool runFlag;
 	static unsigned int WINAPI Work(LPVOID lparam);
 
-	HANDLE hMutex;
-	bool WorkQueryProcess(CommPacketPTR& pk);
+	HANDLE hEvent;
+	bool WorkQueryProcess(ConnPacketPTR& pk); // 일반 쿼리문 
 public:
 
 	DatabaseThread();
@@ -67,25 +69,35 @@ public:
 	bool Initialize();
 
 
-	bool Enqueue(CommPacketPTR&& input)
+	bool Enqueue(ConnPacketPTR&& input)
 	{
-		return WindowToAccount.enqueue(std::move(input));
+		if (!WindowToAccount.enqueue(std::move(input))) return false;
+		SetEvent(hEvent);
+		return true;
 	}
-	bool Dequeue(CommPacketPTR& output)
+	bool Dequeue(ConnPacketPTR& output)
 	{
 		return AccountToWindow.dequeue(output);
 	}
+	bool HasResultPacket() { return !AccountToWindow.isEmpty(); }
 
 	void Quit() { runFlag = false; }
 
 
-	bool IsLoggedIn() { return account->IsConnected(); }
+	bool IsConnected() { return account->IsConnected(); }
 	bool LogIn(const std::string id, const std::string pw);
 	void LogOut();
 
 	std::wstring GetDatabaseName() { return account->GetDatabaseName(); }
 
 
+
+	bool IsDirty() const { return account->IsDirty(); }
+	bool StartTransaction() const { return account->StartTransaction(); }
+	bool Rollback() const { return account->Rollback(); }
+	bool Commit() const { return account->Commit(); }
+
+	std::wstring GetLastErrorW() { return account->GetLastErrorW(); }
 };
 
 #endif

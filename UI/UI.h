@@ -227,6 +227,7 @@ public:
 };
 
 
+
 #include <deque>
 /*
 	currQuery의 저장 기준을 어떻게 정해야 하는가?

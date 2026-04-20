@@ -1,6 +1,5 @@
 #include "DatabaseWindow.h"
 
-DatabaseAccount* DatabaseWindow::account = nullptr;
 DBQueryExamples DatabaseWindow::queryExample;
 DatabaseThread* DatabaseWindow::dbManager = nullptr;
 HMENU DatabaseWindow::hMenuBar = NULL;
@@ -38,8 +37,7 @@ HistoryListBox* prevQueryListBox = nullptr;
 CHARFORMAT2 g_defaultCF;
 void DatabaseWindow::Shutdown()
 {
-    SAFE_FREE(account);
-    //dbManager->Quit();
+    dbManager->Quit();
     SAFE_FREE(dbManager);
 }
 
@@ -75,10 +73,10 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
         switch (LOWORD(wParam))
         {
         case ID_LOGIN:
-            LogIn(hwnd, msg, wParam, lParam);
+            TryLogIn(hwnd, msg, wParam, lParam);
             break;
         case ID_LOGOUT:
-            LogOut(hwnd, msg, wParam, lParam);
+            TryLogOut(hwnd, msg, wParam, lParam);
             break;
 
         case ID_SUBMIT: // Execute 버튼     
@@ -182,7 +180,7 @@ LRESULT CALLBACK DatabaseWindow::DBMain(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
 
     case WM_POST_QUERY_RESULT:
-        ShowQueryResult();
+        NavigateQueryPacket(hwnd);
         break;
 
     case WM_DESTROY:
@@ -320,9 +318,9 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
     g_defaultCF.wWeight = FW_NORMAL;
     g_defaultCF.bCharSet = DEFAULT_CHARSET;
 
-    account = new DatabaseAccount();
-    //dbManager = new DatabaseThread();
-    //dbManager->Initialize();
+    
+    dbManager = new DatabaseThread();
+    dbManager->Initialize();
 
 
     WindowEX::InitializeWindow(title, wndProc);
@@ -331,6 +329,7 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 
 void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    /*
     // 메뉴 생성
     hMenuBar = CreateMenu();
 
@@ -354,7 +353,8 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
     // 윈도우에 메뉴바 적용
     SetMenu(hwnd, hMenuBar);
-    
+    */
+
     // id 창
     id->Create(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, hwnd, nullptr, WindowEX::hInstance);
     id->SetFont(hFontNormal);
@@ -428,44 +428,48 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 }
 
 //////////////////////////////////////////////////////////// account ////////////////////////////////////////////////////////////
-void DatabaseWindow::LogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+void DatabaseWindow::TryLogIn(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    
     try
     {
-        if (account->IsConnected()) throw L"Already Logged-in.";
+        if (dbManager->IsConnected()) throw L"Already Logged-in.";
 
         std::wstring idText = id->GetTextWFromHWND();
         std::wstring pwText = pw->GetTextWFromHWND();
-
-        bool result = account->Connect("localhost", WStringToUTF8(idText).c_str(), WStringToUTF8(pwText), "None");
-        if (!result)
+       
+        if (!dbManager->LogIn(WStringToUTF8(idText), WStringToUTF8(pwText)))
         {
-            const std::wstring errMsg = account->GetLastErrorW();
-            account->Close();
-            throw errMsg;
+            throw L"Log In Fail";
         }
-
+        
         currID->SendToHWND(WM_SETTEXT, 0, (LPARAM)idText.c_str());
         currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)(L"None"));
         WriteMsg(L"Log In success", false);
-        RefreshTree();
-        
+        TryRefreshTree(hwnd);
     }
-    catch (const std::wstring& msg)
+    catch (const wchar_t* msg)
     {
         WriteMsg(msg, true);
     }
+    catch (std::wstring msg)
+    {
+        WriteMsg(msg, true);
+    }
+    catch (...) { WriteMsg(L"Unknown Error", true); }
+
     id->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
     pw->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
 }
-void DatabaseWindow::LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+void DatabaseWindow::TryLogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    if (!account->IsConnected())
+    if (!dbManager->IsConnected())
     {
-        WriteMsg(L"No connection", true);
+        WriteMsg(L"No connection.", true);
         return;
     }
-    account->Close();
+
+    dbManager->LogOut();
     currID->SendToHWND(WM_SETTEXT, 0, (LPARAM)L"");
     currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)L"None");
     listView->Clear();
@@ -474,58 +478,18 @@ void DatabaseWindow::LogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 //////////////////////////////////////////////////////////// query process ////////////////////////////////////////////////////////////
-void DatabaseWindow::ShowQueryResult()
+bool DatabaseWindow::SendQueryToThread(HWND hwnd, const PacketCode& code, const std::wstring& query)
 {
-    CommPacketPTR ptr;
-    if (!dbManager->Dequeue(ptr))
-    {
-        WriteMsg(L"ptr is null!", true);
-        return;
-    }
-
-    try
-    {
-        if (ptr->errNo == -1) throw false;
-        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)dbManager->GetDatabaseName().c_str()); // 현재 데이터베이스 이름 출력
-        prevQueryListBox->AddQuery(ptr->query); // 사용 쿼리 저장
-        prevQueryListBox->SaveCurrQuery(L"");
-        editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
-        WriteQueryResult(ptr->query, ptr->ms);
-    }
-    catch (...)
-    {
-        WriteMsg(ptr->errMsg, true);
-    }
-    ptr.reset();
+    ConnPacketPTR ptr = std::make_unique<ConnPacket>(hwnd, code, query);
+    return dbManager->Enqueue(std::move(ptr));
 }
 void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     std::wstring query = editUI->GetTextWFromHWND();
-    my_ulonglong result = 0;
-    try
-    {
-        /*
-        CommPacketPTR ptr = std::make_unique<CommPacket>(hwnd, query);
-        if (!dbManager->Enqueue(std::move(ptr))) throw L"Enqueue Fail!";
-        */
-        
-        result = WorkQueryProcess(query);
-
-        if (result == -1) throw account->GetLastErrorW();
-
-        currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str()); // 현재 데이터베이스 이름 출력
-        prevQueryListBox->AddQuery(query); // 사용 쿼리 저장
-        prevQueryListBox->SaveCurrQuery(L"");
-        editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
-        
-    }
-    catch (const std::wstring msg)
-    {
-        WriteMsg(msg, true);
-    }
-
+    if (!SendQueryToThread(hwnd, PacketCode::UserTyping, query)) WriteMsg(L"Cannot Send Query!", true);
 }
 
+/*
 my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
 {
     timer.Start();
@@ -576,16 +540,108 @@ my_ulonglong DatabaseWindow::WorkQueryProcess(const std::wstring& query)
     WriteQueryResult(query, ms);
     return queryResult;
 }
+*/
+
+void DatabaseWindow::NavigateQueryPacket(HWND hwnd)
+{
+    ConnPacketPTR ptr;
+
+    while (dbManager->HasResultPacket())
+    {
+        if (!dbManager->Dequeue(ptr)) break;
+        switch (ptr->head)
+        {
+        case PacketCode::Normal:
+            ShowQueryResult(hwnd, ptr.get());
+            break;
+
+        case PacketCode::UserTyping:
+            ShowQueryResult(hwnd, ptr.get());
+            break;
+        case PacketCode::RefreshTree:
+            RefreshTree(hwnd, ptr.get());
+            break;
+
+        case PacketCode::Transaction:
+            break;
+
+        default:
+            break;
+        }
+        ptr.reset();
+    }
+}
+
+// 테이블 업데이트 함수
+void DatabaseWindow::ShowQueryResult(HWND hwnd, const ConnPacket* pk)
+{
+    if (pk->numOfRows == -1)
+    {
+        WriteMsg(pk->errMsg, true);
+        return;
+    }
+
+    // 테이블 뷰 업데이트
+    listView->Clear(); // 성공 시에만 기존 테이블 제거
+    listView->SetColumns(pk->columns);
+    for (auto& row : pk->tableData)
+        listView->AddRow(row);
+    listView->SetItemCount();
+    listView->Resize();
+
+    // 기타 업데이트
+    if (pk->head == PacketCode::UserTyping)
+    {
+        prevQueryListBox->AddQuery(pk->query); // 사용 쿼리 저장
+        prevQueryListBox->SaveCurrQuery(L"");
+    }
+
+    editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
+    currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)dbManager->GetDatabaseName().c_str()); // 현재 데이터베이스 이름 출력
+
+    // 로그
+    WriteQueryResult(pk->query, pk->ms);
+    UpdateUsedTimeAndColumns(pk->ms, pk->numOfRows);
+}
 
 //////////////////////////////////////////////////////////// table & tree ////////////////////////////////////////////////////////////
-bool DatabaseWindow::RefreshTree()
+bool DatabaseWindow::TryRefreshTree(HWND hwnd)
+{ 
+    ConnPacketPTR ptr = std::make_unique<ConnPacket>(hwnd, PacketCode::RefreshTree, L"SELECT TABLE_SCHEMA, TABLE_NAME  FROM information_schema.tables WHERE TABLE_SCHEMA NOT IN('mysql', 'sys', 'performance_schema', 'information_schema') ORDER BY TABLE_SCHEMA, TABLE_NAME;");
+    if (ptr == nullptr) return false;
+    dbManager->Enqueue(std::move(ptr));
+    return true;
+}
+
+void DatabaseWindow::RefreshTree(HWND hwnd, const ConnPacket* pk)
 {
-    hTreeView->DeleteAll(); //  먼저 삭제
-    if (account->ExecuteQuery(L"SHOW DATABASES") == -1)
+    if (pk->numOfRows == -1)
     {
-        WriteMsg(account->GetLastErrorW(), true);
-        return false;
+        WriteMsg(pk->errMsg, true);
+        return;
     }
+
+    hTreeView->DeleteAll(); //  먼저 삭제
+
+    std::wstring currentDB = L"";
+    HTREEITEM hCurrentDbItem = NULL;
+    for (auto& row : pk->tableData) // 쿼리 결과 루프
+    {
+        std::wstring dbName = row[0].value;    // TABLE_SCHEMA
+        std::wstring tableName = row[1].value; // TABLE_NAME
+
+        // 이전 로우와 DB 이름이 다르다면 새로운 부모 노드 생성
+        if (dbName != currentDB)
+        {
+            currentDB = dbName;
+            hCurrentDbItem = hTreeView->AddItem(TVI_ROOT, dbName);
+        }
+
+        // 현재 DB 노드 아래에 테이블 추가
+        hTreeView->AddItem(hCurrentDbItem, tableName);
+    }
+
+    /*
     MYSQL_RES* dbRes = account->GetResult();
     MYSQL_ROW row;
 
@@ -617,11 +673,12 @@ bool DatabaseWindow::RefreshTree()
             }
         }
     }
+    */
+
 
     // 화면 갱신 후 다시 그리기. 깜박임 방지
     hTreeView->SendToHWND(WM_SETREDRAW, TRUE, 0); //SendMessage(hTreeView->GetHWND(), WM_SETREDRAW, TRUE, 0);
     hTreeView->Invalidate();
-    return true;
 }
 
 void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -666,15 +723,13 @@ void DatabaseWindow::NotifyTreeClick(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     {
                         std::wstring db = dbName;
     
-                        if (db != currDatabase->GetTextWFromHWND())
+                        if (db != currDatabase->GetTextWFromHWND()) // 아직 데이터베이스가 선택되지 않았다면
                         {
-                            if (WorkQueryProcess(L"USE " + db + L";") == -1) WriteMsg(account->GetLastErrorW(), true);
-                            else currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)account->GetDatabaseName().c_str());
+                            SendQueryToThread(hwnd, PacketCode::Normal, L"USE " + db + L";");
                         }
-              
 
                         std::wstring tableName = itemText;
-                        if (WorkQueryProcess(L"SELECT * FROM " + tableName + L";") == -1) WriteMsg(account->GetLastErrorW(), true);
+                        SendQueryToThread(hwnd, PacketCode::Normal, L"SELECT * FROM " + tableName + L";");
                         
                     }
                 }
@@ -715,7 +770,6 @@ void DatabaseWindow::NotifyTableMaking(HWND hwnd, UINT msg, WPARAM wParam, LPARA
     {
 
     }
-    //timer.GetDuration();
 }
 uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -744,11 +798,11 @@ uint32_t DatabaseWindow::NotifyTableColoring(HWND hwnd, UINT msg, WPARAM wParam,
             if (colData.type == ColumnType::PK)
             {
  
-                lplvcd->clrTextBk = RGB(200, 255, 200); // 배경: 연한 초록 (FK 느낌)
+                lplvcd->clrTextBk = RGB(200, 255, 200); 
             }
             else if (colData.type == ColumnType::FK)
             {
-                lplvcd->clrTextBk = RGB(200, 255, 255); // 배경: 연한 초록 (FK 느낌)
+                lplvcd->clrTextBk = RGB(200, 255, 255);
             }
             else
             {       
@@ -800,21 +854,21 @@ void DatabaseWindow::SetTransactionMode(const TransactionType& type)
     switch (type)
     {
     case TransactionType::Start:
-        result = account->StartTransaction();
+        result = dbManager->StartTransaction();
         autoCommitToggle->SetToggled(true);
-        resultLog = result == true ? L"Start Transaction" : account->GetLastErrorW();
+        resultLog = result == true ? L"Start Transaction" : dbManager->GetLastErrorW();
         break;
 
     case TransactionType::Commit:
-        result = account->Commit();
+        result = dbManager->Commit();
         autoCommitToggle->SetToggled(false);
-        resultLog = result == true ? L"Commit" : L"Commit Error " + account->GetLastErrorW();
+        resultLog = result == true ? L"Commit" : L"Commit Error " + dbManager->GetLastErrorW();
         break;
 
     case TransactionType::Rollback:
-        result = account->Rollback();
+        result = dbManager->Rollback();
         autoCommitToggle->SetToggled(false);
-        resultLog = result == true ? L"Rollback" : L"Rollback Error " + account->GetLastErrorW();
+        resultLog = result == true ? L"Rollback" : L"Rollback Error " + dbManager->GetLastErrorW();
         break;
     }
 
@@ -822,7 +876,7 @@ void DatabaseWindow::SetTransactionMode(const TransactionType& type)
 }
 void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    if (!account->IsConnected())
+    if (!dbManager->IsConnected())
     {
         WriteMsg(L"No connection", true);
         return;
@@ -832,13 +886,13 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
     if (!autoCommitToggle->IsToggled())
     {
         resultLog = L"Start Transaction";
-        account->StartTransaction(); // 클래스 메서드 호출
+        dbManager->StartTransaction(); // 클래스 메서드 호출
         autoCommitToggle->SetToggled(true);
     }
     else
     {
         resultLog = L"Stop Transaction";
-        if (account->IsDirty())
+        if (dbManager->IsDirty())
         {
             int result = MessageBox(hwnd,
                 L"커밋되지 않은 데이터가 있습니다. 저장하시겠습니까?",
@@ -847,7 +901,7 @@ void DatabaseWindow::SetTransactionMode(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
             if (result == IDYES)
             {
-                account->Commit();
+                dbManager->Commit();
                 autoCommitToggle->SetToggled(false);
             }
             else 
@@ -970,8 +1024,6 @@ LRESULT CALLBACK DatabaseWindow::RichEditSubProc(HWND hwnd, UINT msg, WPARAM wPa
                 editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)prevQueryListBox->GetTextFromIndex().c_str());
                 return 0; // RichEdit의 기본 동작(커서 이동) 무시
             }
-
-           
 
             //ShowResultMsg(L"Curr Index: " + std::to_wstring(prevQueryListBox->GetCurrIndex()));
          
@@ -1105,10 +1157,18 @@ void DatabaseWindow::WriteMsg(const std::wstring str, bool isError)
 }
 void DatabaseWindow::WriteQueryResult(const std::wstring query, double ms)
 {
+    std::wstring resultLog = query;
+    SanitizeForListView(resultLog, true);
+    if (resultLog.size() >= 32) 
+    {
+        resultLog = resultLog.substr(0, 32) + L"...";
+    }
+
     wchar_t buffer[32] = { 0 };
     swprintf_s(buffer, L" [%.4f ms]", ms);
     std::wstring msStr = std::to_wstring(ms);
-    std::wstring resultLog = query; resultLog += buffer;
+    resultLog += buffer; // 소요시간 추가
+
     WriteMsg(resultLog);
 }
 void DatabaseWindow::UpdateUsedTimeAndColumns(double ms, my_ulonglong columns)
@@ -1125,7 +1185,7 @@ void DatabaseWindow::UpdateUsedTimeAndColumns(double ms, my_ulonglong columns)
 //////////////////////////////////////////////////////////// Others ////////////////////////////////////////////////////////////
 void DatabaseWindow::RefreshAll()
 {
-    RefreshTree();
+    //TryRefreshTree();
 }
 
 

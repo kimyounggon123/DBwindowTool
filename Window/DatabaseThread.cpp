@@ -1,8 +1,8 @@
 #include "DatabaseThread.h"
 DatabaseThread::DatabaseThread() : account(nullptr),
-hThread(NULL), dwThreadID(0), hMutex(NULL),
+hThread(NULL), dwThreadID(0), hEvent(NULL),
 runFlag(true),
-AccountToWindow(1000), WindowToAccount(1000)
+AccountToWindow(0), WindowToAccount(0)
 {}
 
 DatabaseThread::~DatabaseThread()
@@ -14,7 +14,7 @@ DatabaseThread::~DatabaseThread()
 void DatabaseThread::Close()
 {
 	CloseHandle(hThread);
-	CloseHandle(hMutex);
+	CloseHandle(hEvent);
 	SAFE_FREE(account);
 }
 
@@ -34,7 +34,7 @@ bool DatabaseThread::Initialize()
 		);
 		if (hThread == NULL) throw false;
 
-		hMutex = CreateMutexW(NULL, FALSE, NULL);
+		hEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
 	}
 	catch (bool ret)
 	{
@@ -43,86 +43,96 @@ bool DatabaseThread::Initialize()
 	return result;
 }
 
-
 unsigned int WINAPI DatabaseThread::Work(LPVOID lparam)
 {
 	DatabaseThread* This = reinterpret_cast<DatabaseThread*>(lparam);
 
-	ThreadSafeQueue<CommPacketPTR>& WtA = This->WindowToAccount;
-	ThreadSafeQueue<CommPacketPTR>& AtW = This->AccountToWindow;
+	ThreadSafeQueue<ConnPacketPTR>& WtA = This->WindowToAccount;
+	ThreadSafeQueue<ConnPacketPTR>& AtW = This->AccountToWindow;
 
 
-	CommPacketPTR output;
+	ConnPacketPTR output;
 	while (This->runFlag)
 	{
-		if (WtA.dequeue(output)) continue;
+		WaitForSingleObject(This->hEvent, INFINITE);
+
+		if (!WtA.dequeue(output))
+		{
+			ResetEvent(This->hEvent); continue;
+		}
+
 		This->WorkQueryProcess(output); // 작업 진행
+
 		HWND& handle = output->hRequestWnd;
 		AtW.enqueue(std::move(output)); // 다시 사용자 window로
 		PostMessageW(handle, WM_POST_QUERY_RESULT, 0, 0);
+		if (AtW.isEmpty()) ResetEvent(This->hEvent);
 	}
 
 	return 0;
 }
 
-
-bool DatabaseThread::WorkQueryProcess(CommPacketPTR& pk)
+bool DatabaseThread::WorkQueryProcess(ConnPacketPTR& pk)
 {
-	CommPacket* pkPtr = pk.get();
-	
-	//// 여기서 락 거는 게 맞음
-	WaitForSingleObject(hMutex, INFINITE);
-
-	timer.Start();
-	my_ulonglong queryResult = account->ExecuteQuery(pkPtr->query);
-	if (queryResult == -1)
+	ConnPacket* pkPtr = pk.get();
+	bool ret = true;
+	try
 	{
-		pkPtr->errMsg = account->GetLastErrorW();
-		pkPtr->errNo = queryResult;
-		return false;
-	}
+		timer.Start();
 
-	// column 정보 저장
-	MYSQL_FIELD* fields = account->getFieldName();
-	unsigned int num_fields = account->getFieldNum();
-	for (unsigned int i = 0; i < num_fields; ++i)
-	{
-		ColumnType type = ColumnType::Normal;
-		if (fields[i].flags & PRI_KEY_FLAG) type = ColumnType::PK;
-		else if (fields[i].flags & MULTIPLE_KEY_FLAG) type = ColumnType::FK;
-		pkPtr->columns.push_back({ type, UTF8ToWString(fields[i].name) });
-	}
-
-
-	// row 정보 저장
-	MYSQL_ROW row = nullptr;
-	int count = 0;
-	while ((row = account->fetchRow()) && count < account->GetMaxRow())
-	{
-		std::vector<CellData> oneRow;
-
-		// 각 필드는 문자열(char*) 형태로 반환됨
-		for (unsigned int i = 0; i < num_fields; ++i)  // 각 row의 field를 출력
+		my_ulonglong queryResult = account->ExecuteQuery(pkPtr->query);
+		if (queryResult == -1) // 쿼리 실패 시
 		{
-			bool isRealNULL = row[i] ? false : true;
-			std::wstring value = isRealNULL ? L"NULL" : UTF8ToWString(row[i]);
-
-			CellData cell{ fields[i].type, value, isRealNULL };
-			oneRow.push_back(cell);
+			pkPtr->errMsg = account->GetLastErrorW();
+			pkPtr->numOfRows = queryResult;
+			throw false;
 		}
-		pkPtr->tableData.push_back(oneRow);
-		count++;
+		MYSQL_FIELD* fields = account->getFieldName();
+		unsigned int num_fields = account->getFieldNum();
+		
+		// column 정보 저장
+		for (unsigned int i = 0; i < num_fields; ++i) 
+		{
+			ColumnType type = ColumnType::Normal;
+			if (fields[i].flags & PRI_KEY_FLAG) type = ColumnType::PK;
+			else if (fields[i].flags & MULTIPLE_KEY_FLAG) type = ColumnType::FK;
+			pkPtr->columns.push_back({ type, UTF8ToWString(fields[i].name) });
+		}
+
+
+		// row 정보 저장
+		MYSQL_ROW row = nullptr;
+		int count = 0;
+		while ((row = account->fetchRow()) && count < account->GetMaxRow())
+		{
+			std::vector<CellData> oneRow;
+
+			// 각 필드는 문자열(char*) 형태로 반환됨
+			for (unsigned int i = 0; i < num_fields; ++i)  // 각 row의 field를 출력
+			{
+				bool isRealNULL = row[i] ? false : true;
+				std::wstring value = isRealNULL ? L"NULL" : UTF8ToWString(row[i]);
+
+				CellData cell{ fields[i].type, value, isRealNULL };
+				oneRow.push_back(cell);
+			}
+			pkPtr->tableData.push_back(oneRow);
+			count++;
+		}
+
+		timer.End();
+		double ms = timer.GetDuration();
+
+		// 정산
+		pkPtr->ms = ms;
+		pkPtr->numOfRows = queryResult;
+	}
+	catch (bool result)
+	{
+		ret = result;
 	}
 
-
-	timer.End();
-	double ms = timer.GetDuration();
-
-	// 정산
-	pkPtr->ms = ms;
-	pkPtr->errNo = queryResult;
-
-	return true;
+	return ret;
 }
 
 
@@ -130,7 +140,7 @@ bool DatabaseThread::LogIn(const std::string id, const std::string pw)
 {
 	if (account == nullptr) return false;
 
-	bool result = account->Connect("localhost", id.c_str(), pw.c_str(), "None");
+	bool result = account->Connect("localhost", id.c_str(), pw.c_str(), nullptr);
 	if (!result)
 	{
 		account->Close();

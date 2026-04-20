@@ -28,7 +28,7 @@ struct CellData
 	std::wstring value;
 	bool isRealNULL; // 실제 DB의 NULL 여부를 저장하는 플래그
 
-	CellData(enum_field_types type, const std::wstring& value = L"", bool isRealNULL = false) : type(type), value(value), isRealNULL(isRealNULL)
+	CellData(enum_field_types type = MYSQL_TYPE_VARCHAR, const std::wstring& value = L"", bool isRealNULL = false) : type(type), value(value), isRealNULL(isRealNULL)
 	{}
 
 	bool IsTime()
