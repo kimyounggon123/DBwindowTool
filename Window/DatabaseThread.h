@@ -26,12 +26,16 @@ struct ConnPacket
 	std::vector<ColumnData> columns; // 컬럼명 저장
 	std::vector<std::vector<CellData>> tableData; // 실제 데이터 저장
 
+
+	TimePoint startProcessTime;
+
 	double ms;
 
 	my_ulonglong numOfRows;
 	std::wstring errMsg;
 
 	ConnPacket(HWND hwnd, const PacketCode& head = PacketCode::Normal, const std::wstring query = L"") : hRequestWnd(hwnd), head(head),
+		startProcessTime(),
 		query(query),  ms(0.0), numOfRows(0), errMsg(L"")
 	{}
 

@@ -236,15 +236,15 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 
 
     // 입력창
-    std::unique_ptr<WindowUI> result = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 416}, Vector2Int{460, 250} }));
+    std::unique_ptr<WindowUI> result = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{880, 416}, Vector2Int{520, 250} }));
     resultLog = result.get();
     uiManager.AddUI(std::move(result));
 
-    std::unique_ptr<WindowUI> usedTimeptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 396}, Vector2Int{200, 20} }));
+    std::unique_ptr<WindowUI> usedTimeptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{880, 396}, Vector2Int{200, 20} }));
     usedTime = usedTimeptr.get();
     uiManager.AddUI(std::move(usedTimeptr));
 
-    std::unique_ptr<WindowUI> numOfColumnptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{1200, 396}, Vector2Int{160, 20} }));
+    std::unique_ptr<WindowUI> numOfColumnptr = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{1140, 396}, Vector2Int{160, 20} }));
     numOfColumns = numOfColumnptr.get();
     uiManager.AddUI(std::move(numOfColumnptr));
 
@@ -254,7 +254,7 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
 
 
 
-    std::unique_ptr<WindowUI> edit = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{940, 65}, Vector2Int{460, 250} }));
+    std::unique_ptr<WindowUI> edit = std::make_unique<WindowUI>(L"", Transform2DINT({ Position{880, 65}, Vector2Int{520, 250} }));
     editUI = edit.get();
     uiManager.AddUI(std::move(edit));
 
@@ -262,21 +262,21 @@ bool DatabaseWindow::InitializeWindow(const wchar_t* title, WNDPROC wndProc)
     submitButton = submit.get();
     uiManager.AddUI(std::move(submit));
 
-    std::unique_ptr<Toggle> autoCommitTgl = std::make_unique<Toggle>(L"", Transform2DINT({ Position{940, 329}, Vector2Int{80, 30} }));
+    std::unique_ptr<Toggle> autoCommitTgl = std::make_unique<Toggle>(L"", Transform2DINT({ Position{880, 329}, Vector2Int{80, 30} }));
     autoCommitToggle = autoCommitTgl.get();
     uiManager.AddUI(std::move(autoCommitTgl));
 
-    std::unique_ptr<Button> rollback = std::make_unique<Button>(L"", Transform2DINT({ Position{1030, 329}, Vector2Int{80, 30} }));
+    std::unique_ptr<Button> rollback = std::make_unique<Button>(L"", Transform2DINT({ Position{970, 329}, Vector2Int{80, 30} }));
     rollbackButton = rollback.get();
     uiManager.AddUI(std::move(rollback));
 
-    std::unique_ptr<Button> commit = std::make_unique<Button>(L"", Transform2DINT({ Position{1120, 329}, Vector2Int{80, 30} }));
+    std::unique_ptr<Button> commit = std::make_unique<Button>(L"", Transform2DINT({ Position{1060, 329}, Vector2Int{80, 30} }));
     commitButton = commit.get();
     uiManager.AddUI(std::move(commit));
 
 
     // 트리 뷰
-    std::unique_ptr<TreeView> tableTreeViewUI = std::make_unique<TreeView>(L"", Transform2DINT({ Position{640, 65}, Vector2Int{290, 600} }));
+    std::unique_ptr<TreeView> tableTreeViewUI = std::make_unique<TreeView>(L"", Transform2DINT({ Position{640, 65}, Vector2Int{230, 600} }));
     hTreeView = tableTreeViewUI.get();
     uiManager.AddUI(std::move(tableTreeViewUI));
 
@@ -420,11 +420,10 @@ void DatabaseWindow::WM_CREATE_FUNC(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     resultClearButton->SetFont(hFontBold);
 
     // table
+    //listView->SetMode(false);
+    //listView->Create(WS_EX_CLIENTEDGE, WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | ES_READONLY | LVS_REPORT | LVS_SINGLESEL, hwnd, (HMENU)ID_LIST_VIEW, hInstance);
     listView->Create(WS_EX_CLIENTEDGE, WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | ES_READONLY | LVS_REPORT | LVS_SINGLESEL | LVS_OWNERDATA, hwnd, (HMENU)ID_LIST_VIEW, hInstance);
     hTreeView->Create(0, WC_TREEVIEW, L"Tree View", WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT, hwnd, (HMENU)5000, hInstance);  
-
-    //prevQueryListBox->Create(0, WC_LISTBOX, L"prevList", WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY, hwnd, (HMENU)ID_PREV_QUERYLIST, hInstance);
-    //prevQueryListBox->SetFont(hFontBold);
 }
 
 //////////////////////////////////////////////////////////// account ////////////////////////////////////////////////////////////
@@ -481,6 +480,7 @@ void DatabaseWindow::TryLogOut(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 bool DatabaseWindow::SendQueryToThread(HWND hwnd, const PacketCode& code, const std::wstring& query)
 {
     ConnPacketPTR ptr = std::make_unique<ConnPacket>(hwnd, code, query);
+    ptr->startProcessTime = timer.GetCurrTimeMs();
     return dbManager->Enqueue(std::move(ptr));
 }
 void DatabaseWindow::SendQuery(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -596,12 +596,18 @@ void DatabaseWindow::ShowQueryResult(HWND hwnd, const ConnPacket* pk)
         prevQueryListBox->SaveCurrQuery(L"");
     }
 
+    double ms = timer.GetDuration(pk->startProcessTime, timer.GetCurrTimeMs());
+
+    // 로그
+    WriteQueryResult(pk->query, ms);
+    UpdateUsedTimeAndColumns(ms, pk->numOfRows);
+
+    //WriteQueryResult(pk->query, pk->ms);
+    //UpdateUsedTimeAndColumns(pk->ms, pk->numOfRows);
+
     editUI->SendToHWND(WM_SETTEXT, 0, (LPARAM)L""); // 문자 초기화
     currDatabase->SendToHWND(WM_SETTEXT, 0, (LPARAM)dbManager->GetDatabaseName().c_str()); // 현재 데이터베이스 이름 출력
 
-    // 로그
-    WriteQueryResult(pk->query, pk->ms);
-    UpdateUsedTimeAndColumns(pk->ms, pk->numOfRows);
 }
 
 //////////////////////////////////////////////////////////// table & tree ////////////////////////////////////////////////////////////

@@ -6,6 +6,8 @@
 #include <iomanip>
 #include <chrono>
 #include <ctime>
+
+using TimePoint = std::chrono::steady_clock::time_point;
 class Timer
 {
 	bool stillRunning;
@@ -18,11 +20,13 @@ public:
 
 	void Start();
 	void End();
+	
+	double GetDuration(const TimePoint start, const TimePoint end);
 	double GetDuration();
 
 	std::tm GetCurrTime();
-
-	std::chrono::steady_clock::time_point GetTimeMs();
+	
+	TimePoint GetCurrTimeMs();
 };
 
 #endif

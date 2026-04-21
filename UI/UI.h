@@ -199,6 +199,11 @@ public:
 
 	const ColumnData& GetColumnData(int n) { return columns[n]; }
 	const CellData& GetRealItem(int r, int c) { return tableData[r][c]; }
+
+	void SetMode(bool mode)
+	{
+		useVirtualTable = mode;
+	}
 };
 
 class TreeView : public WindowUI

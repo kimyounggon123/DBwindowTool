@@ -9,10 +9,16 @@ void Timer::End()
 	stopWatchEndPoint = std::chrono::high_resolution_clock::now();
 	stillRunning = false;
 }
+
+
+double Timer::GetDuration(const TimePoint start, const TimePoint end)
+{
+	std::chrono::duration<double, std::milli> diff = end - start;
+	return diff.count();
+}
 double Timer::GetDuration()
 {
-	std::chrono::duration<double, std::milli> diff = stopWatchEndPoint - stopWatchStartPoint;
-	return diff.count();
+	return GetDuration(stopWatchStartPoint, stopWatchStartPoint);
 }
 
 std::tm Timer::GetCurrTime()
@@ -25,7 +31,7 @@ std::tm Timer::GetCurrTime()
 	return tm;
 }
 
-std::chrono::steady_clock::time_point Timer::GetTimeMs()
+TimePoint Timer::GetCurrTimeMs()
 {
 	return std::chrono::high_resolution_clock::now();
 }
